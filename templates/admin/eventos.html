@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+
+{% block title %}CRUD de Eventos &bull; Staff{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Formulário para Criar Novo Evento -->
+    <div class="col-lg-4 mb-4">
+        <div class="card card-custom shadow-sm border-0">
+            <div class="card-header bg-white py-3 border-bottom">
+                <h5 class="fw-bold text-primary mb-0"><i class="bi bi-calendar-plus me-1"></i> Criar Novo Evento</h5>
+                <small class="text-muted">Cadastro de eventos acadêmicos</small>
+            </div>
+            <div class="card-body p-3">
+                <form action="/admin/eventos" method="POST">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Código Identificador (Único) *</label>
+                        <input type="text" name="codigo" class="form-control" placeholder="Ex: EVT-BICT-2026" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Nome do Evento *</label>
+                        <input type="text" name="nome" class="form-control" placeholder="Ex: Semana de Informática" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Descrição</label>
+                        <textarea name="descricao" class="form-control" rows="2" placeholder="Resumo do evento..."></textarea>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-bold">Data Início *</label>
+                            <input type="date" name="data_inicio" class="form-control" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-bold">Data Fim *</label>
+                            <input type="date" name="data_fim" class="form-control" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Local / Auditório *</label>
+                        <input type="text" name="local" class="form-control" placeholder="Ex: Auditório Central UFMA" required>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 py-2">
+                        <i class="bi bi-check-lg me-1"></i> Criar Evento
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabela de Eventos Cadastrados (Listar, Editar, Cancelar) -->
+    <div class="col-lg-8">
+        <div class="card card-custom shadow-sm border-0">
+            <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-calendar-event text-primary me-2"></i> Eventos Cadastrados</h5>
+                <span class="badge bg-secondary">{{ eventos|length }} eventos</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light small text-uppercase">
+                        <tr>
+                            <th>Código & Nome</th>
+                            <th>Período</th>
+                            <th>Local</th>
+                            <th>Atividades / Inscritos</th>
+                            <th>Status</th>
+                            <th class="text-end">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ev in eventos %}
+                        <tr>
+                            <td>
+                                <span class="badge bg-light text-dark border">{{ ev.codigo }}</span>
+                                <div class="fw-bold text-dark mt-1">{{ ev.nome }}</div>
+                            </td>
+                            <td><small>{{ ev.data_inicio }}<br>até {{ ev.data_fim }}</small></td>
+                            <td><small>{{ ev.local }}</small></td>
+                            <td>
+                                <span class="badge bg-info text-dark">{{ ev.total_atividades }} ativ.</span>
+                                <span class="badge bg-secondary">{{ ev.total_inscritos }} inscritos</span>
+                            </td>
+                            <td>
+                                {% if ev.status == 'ATIVO' %}
+                                    <span class="badge bg-success">Ativo</span>
+                                {% elif ev.status == 'CANCELADO' %}
+                                    <span class="badge bg-danger">Cancelado</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Finalizado</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalEditar{{ ev.id_evento }}">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                {% if ev.status == 'ATIVO' %}
+                                <form action="/admin/eventos/{{ ev.id_evento }}/cancelar" method="POST" class="d-inline" onsubmit="return confirm('Tem certeza que deseja cancelar este evento?');">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Cancelar Evento">
+                                        <i class="bi bi-x-circle"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+
+                        <!-- Modal de Edição -->
+                        <div class="modal fade" id="modalEditar{{ ev.id_evento }}" tabindex="-1">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <form action="/admin/eventos/{{ ev.id_evento }}/editar" method="POST">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Editar Evento: {{ ev.codigo }}</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <div class="mb-3">
+                                                <label class="form-label small fw-bold">Nome do Evento</label>
+                                                <input type="text" name="nome" value="{{ ev.nome }}" class="form-control" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label small fw-bold">Descrição</label>
+                                                <textarea name="descricao" class="form-control" rows="2">{{ ev.descricao }}</textarea>
+                                            </div>
+                                            <div class="row g-2 mb-3">
+                                                <div class="col-6">
+                                                    <label class="form-label small fw-bold">Data Início</label>
+                                                    <input type="date" name="data_inicio" value="{{ ev.data_inicio }}" class="form-control" required>
+                                                </div>
+                                                <div class="col-6">
+                                                    <label class="form-label small fw-bold">Data Fim</label>
+                                                    <input type="date" name="data_fim" value="{{ ev.data_fim }}" class="form-control" required>
+                                                </div>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label small fw-bold">Local</label>
+                                                <input type="text" name="local" value="{{ ev.local }}" class="form-control" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label small fw-bold">Status do Evento</label>
+                                                <select name="status_evento" class="form-select">
+                                                    <option value="ATIVO" {% if ev.status == 'ATIVO' %}selected{% endif %}>ATIVO</option>
+                                                    <option value="CANCELADO" {% if ev.status == 'CANCELADO' %}selected{% endif %}>CANCELADO</option>
+                                                    <option value="FINALIZADO" {% if ev.status == 'FINALIZADO' %}selected{% endif %}>FINALIZADO</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                                            <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}CRUD de Atividades &bull; Staff{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Formulário para Criar Atividade -->
+    <div class="col-lg-4 mb-4">
+        <div class="card card-custom shadow-sm border-0">
+            <div class="card-header bg-white py-3 border-bottom">
+                <h5 class="fw-bold text-info mb-0"><i class="bi bi-card-checklist me-1"></i> Nova Atividade</h5>
+                <small class="text-muted">Cadastro com requisitos de certificação</small>
+            </div>
+            <div class="card-body p-3">
+                <form action="/admin/atividades" method="POST">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Evento Vinculado *</label>
+                        <select name="id_evento" class="form-select" required>
+                            <option value="">-- Selecione o evento --</option>
+                            {% for ev in eventos %}
+                            <option value="{{ ev.id_evento }}">{{ ev.nome }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Tipo de Atividade *</label>
+                        <select name="tipo" class="form-select" required>
+                            <option value="Minicurso">Minicurso</option>
+                            <option value="Palestra">Palestra</option>
+                            <option value="Workshop">Workshop</option>
+                            <option value="Mesa Redonda">Mesa Redonda</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Título da Atividade *</label>
+                        <input type="text" name="nome" class="form-control" placeholder="Ex: SQL Avançado na Nuvem" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Descrição</label>
+                        <textarea name="descricao" class="form-control" rows="2" placeholder="Tópicos abordados..."></textarea>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-bold">Data Início</label>
+                            <input type="date" name="data_atividade" class="form-control" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-bold">Limite Vagas</label>
+                            <input type="number" name="limite_vagas" value="40" class="form-control" required>
+                        </div>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-bold">Hora Início</label>
+                            <input type="time" name="hora_inicio" value="14:00" class="form-control" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-bold">Hora Fim</label>
+                            <input type="time" name="hora_fim" value="18:00" class="form-control" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Palestrante / Instrutor</label>
+                        <select name="id_palestrante" class="form-select">
+                            <option value="">-- Opcional (vincular palestrante) --</option>
+                            {% for pal in palestrantes %}
+                            <option value="{{ pal.id_palestrante }}">{{ pal.nome }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Requisitos de Certificado -->
+                    <div class="p-3 bg-light rounded border mb-3">
+                        <h6 class="fw-bold text-dark mb-2"><i class="bi bi-award-fill text-warning"></i> Requisitos de Certificado</h6>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label class="form-label small fw-bold">Carga Horária (h) *</label>
+                                <input type="number" name="carga_horaria" step="0.5" value="8.0" class="form-control" required>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small fw-bold">Freq. Mínima (%) *</label>
+                                <input type="number" name="frequencia_minima" step="1" value="75.0" min="0" max="100" class="form-control" required>
+                            </div>
+                        </div>
+                        <div class="form-check mt-2">
+                            <input class="form-check-input" type="checkbox" name="exige_conclusao" value="1" id="exigeConc">
+                            <label class="form-check-label small" for="exigeConc">
+                                Exigir entrega / conclusão de avaliação
+                            </label>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-info text-white w-100 py-2">
+                        <i class="bi bi-save me-1"></i> Salvar Atividade
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabela de Atividades Cadastradas -->
+    <div class="col-lg-8">
+        <div class="card card-custom shadow-sm border-0">
+            <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-card-checklist text-info me-2"></i> Atividades e Critérios de Certificação</h5>
+                <span class="badge bg-secondary">{{ atividades|length }} atividades</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light small text-uppercase">
+                        <tr>
+                            <th>Atividade / Evento</th>
+                            <th>Palestrante(s)</th>
+                            <th>Data & Vagas</th>
+                            <th>Requisitos de Certificado</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for atv in atividades %}
+                        <tr>
+                            <td>
+                                <strong class="text-dark">{{ atv.nome }}</strong>
+                                <div class="small text-muted">{{ atv.tipo }} &bull; {{ atv.evento_nome }}</div>
+                            </td>
+                            <td><small>{{ atv.palestrantes if atv.palestrantes else 'A definir' }}</small></td>
+                            <td>
+                                <small>{{ atv.data_atividade }}</small><br>
+                                <span class="badge bg-light text-dark border">{{ atv.total_inscritos }}/{{ atv.limite_vagas }} vagas</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-primary">{{ atv.carga_horaria }}h</span>
+                                <span class="badge bg-warning text-dark">Min: {{ atv.frequencia_minima }}%</span>
+                                {% if atv.exige_conclusao %}
+                                    <span class="badge bg-danger">+ Conclusão</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-light text-secondary border">{{ atv.status }}</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

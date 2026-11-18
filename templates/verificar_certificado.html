@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block title %}Verificação Pública de Certificado &bull; Eventos UFMA{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <!-- Caixa de Busca Pública -->
+        <div class="card card-custom shadow-sm border-0 mb-4">
+            <div class="card-header bg-white py-3 border-bottom text-center">
+                <i class="bi bi-patch-check-fill text-primary fs-2"></i>
+                <h4 class="fw-bold text-dark mt-1 mb-1">Verificação Pública de Certificado</h4>
+                <p class="text-muted small mb-0">Insira o código de validação único impresso no documento para verificar autenticidade</p>
+            </div>
+            <div class="card-body p-4">
+                <form action="/verificar" method="GET">
+                    <div class="input-group input-group-lg mb-2">
+                        <span class="input-group-text bg-light text-muted"><i class="bi bi-upc-scan"></i></span>
+                        <input type="text" name="codigo" class="form-control" placeholder="Ex: CERT-UFMA-2026-BICT01" value="{{ codigo if codigo else '' }}" required autofocus>
+                        <button class="btn btn-primary px-4 fw-semibold" type="submit">
+                            <i class="bi bi-search me-1"></i> Verificar
+                        </button>
+                    </div>
+                    <div class="form-text text-center small text-muted">
+                        Código de validação de teste pré-cadastrado: 
+                        <a href="/verificar?codigo=CERT-UFMA-2026-BICT01" class="text-decoration-none"><code>CERT-UFMA-2026-BICT01</code></a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Mensagem de Erro ou Revogação -->
+        {% if erro_busca %}
+        <div class="alert alert-danger shadow-sm border-0 text-center p-4 mb-4">
+            <div class="fs-1 text-danger mb-2"><i class="bi bi-x-octagon-fill"></i></div>
+            <h4 class="fw-bold mb-2">Certificado Inválido ou Não Encontrado</h4>
+            <p class="mb-0 text-secondary">{{ erro_busca }}</p>
+        </div>
+        {% endif %}
+
+        <!-- Certificado Válido Encontrado -->
+        {% if certificado %}
+        <div class="card shadow border-3 border-primary mb-5" style="border-radius: 14px; background: #ffffff;">
+            <div class="card-header bg-primary text-white py-3 text-center" style="border-radius: 10px 10px 0 0;">
+                <span class="badge bg-white text-primary text-uppercase fw-bold mb-1">Universidade Federal do Maranhão</span>
+                <h3 class="fw-bold mb-0"><i class="bi bi-patch-check-fill me-2"></i> Certificado Acadêmico Válido</h3>
+            </div>
+            <div class="card-body p-4 p-md-5">
+                <div class="text-center mb-4 pb-3 border-bottom">
+                    <p class="text-muted text-uppercase small mb-1">Certificamos com fé pública acadêmica que</p>
+                    <h2 class="fw-bold text-dark mb-0">{{ certificado.participante_nome }}</h2>
+                    <span class="text-muted small">CPF: {{ certificado.participante_cpf[:3] }}.{{ certificado.participante_cpf[3:6] }}.{{ certificado.participante_cpf[6:9] }}-{{ certificado.participante_cpf[9:] }}</span>
+                </div>
+
+                <div class="mb-4 text-secondary fs-5" style="line-height: 1.8; text-align: justify;">
+                    {% if certificado.tipo_destinatario == 'PALESTRANTE' %}
+                        Certificamos com fé pública acadêmica que o(a) docente/especialista 
+                        <strong class="text-dark">{{ certificado.participante_nome }}</strong>, 
+                        portador(a) do CPF 
+                        <strong>{{ certificado.participante_cpf[:3] }}.{{ certificado.participante_cpf[3:6] }}.{{ certificado.participante_cpf[6:9] }}-{{ certificado.participante_cpf[9:] }}</strong>, 
+                        atuou com excelência como <span class="badge bg-info text-dark fs-5 align-middle">PALESTRANTE / MINISTRANTE</span> da atividade acadêmica 
+                        <strong class="text-primary">"{{ certificado.atividade_nome }}"</strong> ({{ certificado.atividade_tipo }}), 
+                        integrante do evento 
+                        <strong class="text-dark">"{{ certificado.evento_nome }}"</strong>, 
+                        realizado no período de {{ certificado.data_inicio }} a {{ certificado.data_fim }} em {{ certificado.evento_local }},
+                        totalizando a carga horária docente de 
+                        <strong class="text-dark">{{ certificado.carga_horaria }} horas</strong>.
+                    {% else %}
+                        Certificamos com fé pública acadêmica que o(a) participante 
+                        <strong class="text-dark">{{ certificado.participante_nome }}</strong>, 
+                        portador(a) do CPF 
+                        <strong>{{ certificado.participante_cpf[:3] }}.{{ certificado.participante_cpf[3:6] }}.{{ certificado.participante_cpf[6:9] }}-{{ certificado.participante_cpf[9:] }}</strong>, 
+                        participou com êxito da atividade acadêmica 
+                        <strong class="text-primary">"{{ certificado.atividade_nome }}"</strong> ({{ certificado.atividade_tipo }}), 
+                        integrante do evento 
+                        <strong class="text-dark">"{{ certificado.evento_nome }}"</strong>, 
+                        realizado no período de {{ certificado.data_inicio }} a {{ certificado.data_fim }} em {{ certificado.evento_local }},
+                        cumprindo integralmente a carga horária de 
+                        <strong class="text-dark">{{ certificado.carga_horaria }} horas</strong>.
+                    {% endif %}
+                </div>
+
+                <!-- Detalhes do Registro no Banco de Dados -->
+                <div class="bg-light p-3 rounded-3 mb-4">
+                    <div class="row g-2 small">
+                        <div class="col-md-6">
+                            <span class="text-muted">Destinatário / Papel:</span><br>
+                            <strong class="text-dark">{{ certificado.participante_nome }}</strong>
+                            {% if certificado.tipo_destinatario == 'PALESTRANTE' %}
+                                <span class="badge bg-info text-dark ms-1">Palestrante</span>
+                            {% else %}
+                                <span class="badge bg-primary ms-1">Participante</span>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <span class="text-muted">Evento / Atividade:</span><br>
+                            <strong class="text-dark">{{ certificado.evento_nome }} &bull; {{ certificado.atividade_nome }}</strong>
+                        </div>
+                        <div class="col-md-6">
+                            <span class="text-muted">Carga Horária:</span><br>
+                            <strong class="text-dark">{{ certificado.carga_horaria }} horas</strong>
+                        </div>
+                        <div class="col-md-6">
+                            <span class="text-muted">Data de Emissão:</span><br>
+                            <strong class="text-dark">{{ certificado.data_emissao }}</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center pt-3 border-top small text-muted">
+                    <div>
+                        <i class="bi bi-shield-lock-fill text-success"></i> 
+                        Código de Validação Digital: <code class="fw-bold fs-6 text-primary">{{ certificado.codigo_validacao }}</code>
+                    </div>
+                    <div>
+                        Status: <span class="badge bg-success fs-6"><i class="bi bi-check-circle"></i> {{ certificado.status }}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-white text-center py-3 border-0">
+                <button onclick="window.print()" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-printer"></i> Imprimir Certificado
+                </button>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

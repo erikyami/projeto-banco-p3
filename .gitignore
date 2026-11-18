@@ -1,0 +1,114 @@
+# ===================================================================
+# .gitignore - Sistema de Gestão de Eventos Acadêmicos (FastAPI)
+# ===================================================================
+
+# --- Python & Bytecode ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# --- Ambientes Virtuais (Virtual Environments) ---
+.venv/
+venv/
+ENV/
+env/
+env.bak/
+venv.bak/
+bin/
+include/
+lib/
+
+# --- IDEs, Editores e Ferramentas de Desenvolvimento ---
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+.settings/
+
+# --- Variáveis de Ambiente e Segredos ---
+# NUNCA comite credenciais de produção ou arquivos .env reais
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.cert
+*.crt
+
+# --- Docker & Volumes Locais ---
+# Caso utilize bind mounts locais para dados do banco de dados
+mariadb_data/
+mysql_data/
+pg_data/
+*.db
+*.sqlite3
+
+# --- Logs & Temporários ---
+*.log
+logs/
+*.pid
+*.seed
+*.pid.lock
+/tmp/
+temp/
+*.tmp
+
+# --- Testes e Cobertura (Unit Tests & Coverage) ---
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# --- Linters e Tipagem Estática ---
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+.ruff_cache/
+
+# --- Sistema Operacional (OS Generated Files) ---
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+[Dd]esktop.ini

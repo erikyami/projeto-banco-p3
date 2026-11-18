@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}Gestão Administrativa de Certificados &bull; certifica{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-1 text-dark">
+            <i class="bi bi-shield-lock-fill text-warning me-2"></i> Gestão de Certificados (Visão Admin)
+        </h2>
+        <p class="text-muted mb-0">Controle administrativo e revogação de certificados emitidos via Raw SQL UPDATE.</p>
+    </div>
+    <a href="/verificar" class="btn btn-outline-primary" target="_blank">
+        <i class="bi bi-box-arrow-up-right me-1"></i> Abrir Verificador Público
+    </a>
+</div>
+
+<div class="card card-custom shadow-sm border-0">
+    <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+        <h5 class="fw-bold mb-0 text-dark">
+            <i class="bi bi-card-checklist text-primary me-2"></i> Relação de Certificados Emitidos
+        </h5>
+        <span class="badge bg-secondary">{{ certificados|length }} certificados</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light small text-uppercase">
+                <tr>
+                    <th>Código de Validação</th>
+                    <th>Participante</th>
+                    <th>Evento / Atividade</th>
+                    <th>Carga Horária</th>
+                    <th>Data Emissão</th>
+                    <th>Status Atual</th>
+                    <th class="text-end" style="min-width: 200px;">Ação Administrativa</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cert in certificados %}
+                <tr>
+                    <td>
+                        <code class="fw-bold fs-6 text-primary">{{ cert.codigo_validacao }}</code>
+                    </td>
+                    <td>
+                        <strong class="text-dark">{{ cert.participante_nome }}</strong>
+                        <div class="small text-muted">CPF: {{ cert.participante_cpf }}</div>
+                    </td>
+                    <td>
+                        <div class="fw-semibold text-secondary">{{ cert.atividade_nome }}</div>
+                        <small class="text-muted">{{ cert.evento_nome }}</small>
+                    </td>
+                    <td>
+                        <span class="badge bg-light text-dark border">{{ cert.carga_horaria }}h</span>
+                    </td>
+                    <td>
+                        <small class="text-muted">{{ cert.data_emissao.strftime('%d/%m/%Y %H:%M') if cert.data_emissao else '-' }}</small>
+                    </td>
+                    <td>
+                        {% if cert.status == 'VALIDO' %}
+                            <span class="badge bg-success fs-6"><i class="bi bi-check-circle-fill me-1"></i> VÁLIDO</span>
+                        {% else %}
+                            <span class="badge bg-danger fs-6"><i class="bi bi-x-octagon-fill me-1"></i> REVOGADO</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end">
+                        <!-- Botão de Alteração de Status via Raw SQL UPDATE -->
+                        <form action="/admin/certificados/{{ cert.id }}/status" method="POST" class="d-inline">
+                            {% if cert.status == 'VALIDO' %}
+                                <input type="hidden" name="novo_status" value="REVOGADO">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Tem certeza de que deseja REVOGAR este certificado?');">
+                                    <i class="bi bi-slash-circle me-1"></i> Revogar Certificado
+                                </button>
+                            {% else %}
+                                <input type="hidden" name="novo_status" value="VALIDO">
+                                <button type="submit" class="btn btn-sm btn-outline-success">
+                                    <i class="bi bi-check2-circle me-1"></i> Reativar para VÁLIDO
+                                </button>
+                            {% endif %}
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="text-center py-4 text-muted">
+                        Nenhum certificado emitido no banco de dados.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

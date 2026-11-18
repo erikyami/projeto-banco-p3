@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}Início &bull; Gestão de Eventos Acadêmicos{% endblock %}
+
+{% block content %}
+<!-- Banner de Apresentação -->
+<div class="p-5 mb-4 bg-primary text-white rounded-3 shadow-sm">
+    <div class="container-fluid py-2">
+        <h1 class="display-6 fw-bold">Sistema de Gestão de Eventos Acadêmicos</h1>
+        <p class="col-md-9 fs-5 text-light opacity-90">
+            Plataforma desenvolvida para a disciplina de <strong>Banco de Dados</strong> do curso <strong>BICT/UFMA</strong>.
+            Controle de inscrições, presença multidias, requisitos de certificação e emissão com validação pública.
+        </p>
+        <div class="d-flex flex-wrap gap-2 mt-4">
+            <a href="/login" class="btn btn-light btn-lg px-4 fw-semibold text-primary"><i class="bi bi-box-arrow-in-right"></i> Acessar o Sistema</a>
+            <a href="/verificar" class="btn btn-outline-light btn-lg px-4"><i class="bi bi-search"></i> Validar Certificado</a>
+            <a href="/sobre" class="btn btn-outline-light btn-lg px-3"><i class="bi bi-info-circle"></i> Sobre o Projeto</a>
+        </div>
+    </div>
+</div>
+
+<!-- Métricas Públicas -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card card-custom p-3 border-start border-primary border-4">
+            <span class="text-muted text-uppercase fw-semibold small">Eventos Ativos</span>
+            <div class="d-flex justify-content-between align-items-center mt-2">
+                <h3 class="fw-bold mb-0 text-dark">{{ tot_eventos }}</h3>
+                <i class="bi bi-calendar-check fs-2 text-primary opacity-50"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card card-custom p-3 border-start border-info border-4">
+            <span class="text-muted text-uppercase fw-semibold small">Atividades Cadastradas</span>
+            <div class="d-flex justify-content-between align-items-center mt-2">
+                <h3 class="fw-bold mb-0 text-dark">{{ tot_atividades }}</h3>
+                <i class="bi bi-card-checklist fs-2 text-info opacity-50"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card card-custom p-3 border-start border-success border-4">
+            <span class="text-muted text-uppercase fw-semibold small">Certificados Emitidos</span>
+            <div class="d-flex justify-content-between align-items-center mt-2">
+                <h3 class="fw-bold mb-0 text-success">{{ tot_certificados }}</h3>
+                <i class="bi bi-patch-check-fill fs-2 text-success opacity-50"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Eventos Disponíveis -->
+<div class="card card-custom shadow-sm border-0 mb-4">
+    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+        <h5 class="fw-bold mb-0"><i class="bi bi-calendar3 text-primary me-2"></i> Próximos Eventos Acadêmicos</h5>
+        <a href="/cadastro" class="btn btn-sm btn-primary">Inscrever-se</a>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light small text-uppercase">
+                    <tr>
+                        <th>Código & Evento</th>
+                        <th>Período</th>
+                        <th>Local</th>
+                        <th>Atividades</th>
+                        <th class="text-end">Ação</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ev in eventos %}
+                    <tr>
+                        <td>
+                            <span class="badge bg-light text-dark border">{{ ev.codigo }}</span>
+                            <div class="fw-bold text-dark mt-1">{{ ev.nome }}</div>
+                            <small class="text-muted">{{ ev.descricao }}</small>
+                        </td>
+                        <td>
+                            <small><i class="bi bi-calendar2-range text-secondary"></i> {{ ev.data_inicio }} a {{ ev.data_fim }}</small>
+                        </td>
+                        <td><small><i class="bi bi-geo-alt text-danger"></i> {{ ev.local }}</small></td>
+                        <td><span class="badge bg-secondary">{{ ev.total_atividades }} atividade(s)</span></td>
+                        <td class="text-end">
+                            <a href="/login?perfil=PARTICIPANTE" class="btn btn-sm btn-outline-primary">Participar</a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center py-4 text-muted">Nenhum evento ativo cadastrado no momento.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

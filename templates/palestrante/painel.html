@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}Área do Palestrante &bull; Eventos UFMA{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold text-dark mb-1"><i class="bi bi-mic-fill text-info me-2"></i> Área do Palestrante / Docente</h2>
+        <p class="text-muted mb-0">Bem-vindo(a), <strong>{{ user.nome }}</strong>. Acompanhe suas atividades ministradas e certificados de palestrante.</p>
+    </div>
+    <span class="badge bg-info text-dark fs-6">{{ user.email }}</span>
+</div>
+
+<!-- Meus Certificados de Palestrante -->
+<div class="card card-custom shadow-sm border-0 mb-4 border-start border-success border-4">
+    <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+        <h5 class="fw-bold text-success mb-0">
+            <i class="bi bi-patch-check-fill me-2"></i> Meus Certificados Oficiais de Palestrante
+        </h5>
+        <span class="badge bg-success">{{ certificados|length }} certificado(s) emitido(s)</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light small text-uppercase">
+                <tr>
+                    <th>Código de Validação</th>
+                    <th>Atividade Ministrada</th>
+                    <th>Evento</th>
+                    <th>Carga Horária Docente</th>
+                    <th>Data Emissão</th>
+                    <th>Status</th>
+                    <th class="text-end">Ação</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cert in certificados %}
+                <tr>
+                    <td><code class="fw-bold fs-6 text-primary">{{ cert.codigo_validacao }}</code></td>
+                    <td><strong class="text-dark">{{ cert.atividade_nome }}</strong></td>
+                    <td><small class="text-muted">{{ cert.evento_nome }}</small></td>
+                    <td><span class="badge bg-light text-dark border">{{ cert.carga_horaria }}h</span></td>
+                    <td><small class="text-muted">{{ cert.data_emissao }}</small></td>
+                    <td>
+                        {% if cert.status_certificado == 'VALIDO' %}
+                            <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i> Válido</span>
+                        {% else %}
+                            <span class="badge bg-danger"><i class="bi bi-slash-circle me-1"></i> Revogado</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end">
+                        {% if cert.status_certificado == 'VALIDO' %}
+                            <a href="/verificar?codigo={{ cert.codigo_validacao }}" class="btn btn-sm btn-outline-success" target="_blank">
+                                <i class="bi bi-box-arrow-up-right me-1"></i> Visualizar / Imprimir
+                            </a>
+                        {% else %}
+                            <span class="text-muted small">Indisponível</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="text-center py-4 text-muted">
+                        Nenhum certificado emitido até o momento. A coordenação emitirá após a realização do evento.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Minhas Atividades Ministradas -->
+<div class="card card-custom shadow-sm border-0">
+    <div class="card-header bg-white py-3 border-bottom">
+        <h5 class="fw-bold mb-0 text-dark">
+            <i class="bi bi-calendar-check text-primary me-2"></i> Atividades e Minicursos Sob Minha Responsabilidade
+        </h5>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light small text-uppercase">
+                <tr>
+                    <th>Atividade</th>
+                    <th>Evento</th>
+                    <th>Data & Horário</th>
+                    <th>Local</th>
+                    <th>Carga Horária</th>
+                    <th>Alunos Inscritos</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for atv in atividades %}
+                <tr>
+                    <td>
+                        <strong class="text-dark">{{ atv.atividade_nome }}</strong>
+                        <div class="small text-muted">{{ atv.tipo }}</div>
+                    </td>
+                    <td><small>{{ atv.evento_nome }}</small></td>
+                    <td>
+                        <small>{{ atv.data_atividade }}</small><br>
+                        <small class="text-muted">{{ atv.hora_inicio }} - {{ atv.hora_fim }}</small>
+                    </td>
+                    <td><small>{{ atv.local }}</small></td>
+                    <td><span class="badge bg-light text-dark border">{{ atv.carga_horaria }}h</span></td>
+                    <td><span class="badge bg-info text-dark">{{ atv.total_alunos_inscritos }} aluno(s)</span></td>
+                    <td><span class="badge bg-secondary">{{ atv.status_atividade }}</span></td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="text-center py-4 text-muted">Nenhuma atividade vinculada ao seu perfil.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

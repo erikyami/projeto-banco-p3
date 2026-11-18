@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}Gestão de Participantes &bull; Staff{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold text-dark mb-1"><i class="bi bi-people-fill text-primary me-2"></i> Gestão de Participantes</h2>
+        <p class="text-muted mb-0">Controle cadastral e histórico de participações em eventos e atividades.</p>
+    </div>
+    <span class="badge bg-secondary fs-6">{{ participantes|length }} participantes</span>
+</div>
+
+<div class="card card-custom shadow-sm border-0">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light small text-uppercase">
+                <tr>
+                    <th>ID</th>
+                    <th>Nome do Participante</th>
+                    <th>CPF</th>
+                    <th>E-mail</th>
+                    <th>Telefone</th>
+                    <th>Histórico</th>
+                    <th>Certificados Válidos</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for part in participantes %}
+                <tr>
+                    <td><span class="badge bg-light text-dark border">#{{ part.id_participante }}</span></td>
+                    <td><strong class="text-dark">{{ part.nome }}</strong></td>
+                    <td><code>{{ part.cpf }}</code></td>
+                    <td><small>{{ part.email }}</small></td>
+                    <td><small>{{ part.telefone if part.telefone else '-' }}</small></td>
+                    <td>
+                        <span class="badge bg-primary">{{ part.total_eventos }} evento(s)</span>
+                        <span class="badge bg-info text-dark">{{ part.total_atividades }} atividade(s)</span>
+                    </td>
+                    <td>
+                        <span class="badge bg-success">{{ part.total_certificados }} emitido(s)</span>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="text-center py-4 text-muted">Nenhum participante registrado.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+
+{% block title %}Gestão de Certificados &bull; Staff{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold text-dark mb-1"><i class="bi bi-award-fill text-warning me-2"></i> Gestão de Certificados</h2>
+        <p class="text-muted mb-0">Emissão e controle de autenticidade para Participantes e Palestrantes.</p>
+    </div>
+    <a href="/verificar" class="btn btn-outline-primary" target="_blank">
+        <i class="bi bi-search me-1"></i> Verificador Público
+    </a>
+</div>
+
+<!-- 1. Palestrantes Aptos para Emissão de Certificado -->
+<div class="card card-custom shadow-sm border-0 mb-4 border-start border-info border-4">
+    <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+        <h5 class="fw-bold text-info mb-0">
+            <i class="bi bi-mic-fill me-1"></i> Palestrantes / Instrutores para Certificação
+        </h5>
+        <span class="badge bg-info text-dark">{{ palestrantes_aptos|length }} palestrante(s) pendente(s)</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light small text-uppercase">
+                <tr>
+                    <th>Palestrante / Instrutor</th>
+                    <th>CPF</th>
+                    <th>Atividade Ministrada</th>
+                    <th>Evento</th>
+                    <th>Carga Horária</th>
+                    <th class="text-end">Ação</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for pal in palestrantes_aptos %}
+                <tr>
+                    <td><strong class="text-dark">{{ pal.palestrante_nome }}</strong></td>
+                    <td><code>{{ pal.palestrante_cpf }}</code></td>
+                    <td><strong class="text-primary">{{ pal.atividade_nome }}</strong></td>
+                    <td><small class="text-muted">{{ pal.evento_nome }}</small></td>
+                    <td><span class="badge bg-light text-dark border">{{ pal.carga_horaria }}h</span></td>
+                    <td class="text-end">
+                        <form action="/admin/certificados/emitir-palestrante" method="POST" class="d-inline">
+                            <input type="hidden" name="id_palestrante" value="{{ pal.id_palestrante }}">
+                            <input type="hidden" name="id_atividade" value="{{ pal.id_atividade }}">
+                            <button type="submit" class="btn btn-sm btn-info text-white">
+                                <i class="bi bi-award me-1"></i> Emitir Certificado de Palestrante
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center py-3 text-muted">
+                        Todos os palestrantes vinculados às atividades já possuem certificados emitidos.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- 2. Participantes Elegíveis para Emissão (com base na frequência) -->
+{% if candidatos_emissao %}
+<div class="card card-custom shadow-sm border-0 mb-4 border-start border-success border-4">
+    <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+        <h5 class="fw-bold text-success mb-0">
+            <i class="bi bi-check2-all me-1"></i> Participantes com Frequência Suficiente
+        </h5>
+        <span class="badge bg-success">{{ candidatos_emissao|length }} apto(s)</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light small text-uppercase">
+                <tr>
+                    <th>Participante</th>
+                    <th>Atividade</th>
+                    <th>Frequência Apurada</th>
+                    <th>Carga Horária</th>
+                    <th class="text-end">Ação</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cand in candidatos_emissao %}
+                <tr>
+                    <td>
+                        <strong class="text-dark">{{ cand.participante_nome }}</strong>
+                        <div class="small text-muted">CPF: {{ cand.participante_cpf }}</div>
+                    </td>
+                    <td><strong class="text-secondary">{{ cand.atividade_nome }}</strong></td>
+                    <td>
+                        <span class="badge bg-success fs-6">{{ cand.percentual_frequencia }}%</span>
+                        <small class="text-muted ms-1">(Mín: {{ cand.frequencia_minima }}%)</small>
+                    </td>
+                    <td><span class="badge bg-light text-dark border">{{ cand.carga_horaria }}h</span></td>
+                    <td class="text-end">
+                        <form action="/admin/certificados/emitir" method="POST" class="d-inline">
+                            <input type="hidden" name="id_participacao" value="{{ cand.id_participacao }}">
+                            <button type="submit" class="btn btn-sm btn-primary">
+                                <i class="bi bi-award me-1"></i> Emitir Certificado de Participante
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<!-- 3. Relação Geral de Certificados Emitidos -->
+<div class="card card-custom shadow-sm border-0">
+    <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+        <h5 class="fw-bold mb-0 text-dark">
+            <i class="bi bi-card-checklist text-primary me-2"></i> Relação Geral de Certificados Emitidos
+        </h5>
+        <span class="badge bg-secondary">{{ certificados|length }} certificados</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light small text-uppercase">
+                <tr>
+                    <th>Código de Validação</th>
+                    <th>Tipo</th>
+                    <th>Destinatário</th>
+                    <th>Evento & Atividade</th>
+                    <th>Carga Horária</th>
+                    <th>Data Emissão</th>
+                    <th>Status</th>
+                    <th class="text-end" style="min-width: 220px;">Alteração de Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cert in certificados %}
+                <tr>
+                    <td><code class="fw-bold fs-6 text-primary">{{ cert.codigo_validacao }}</code></td>
+                    <td>
+                        {% if cert.tipo_destinatario == 'PALESTRANTE' %}
+                            <span class="badge bg-info text-dark"><i class="bi bi-mic-fill"></i> Palestrante</span>
+                        {% else %}
+                            <span class="badge bg-primary"><i class="bi bi-person-fill"></i> Participante</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <strong class="text-dark">{{ cert.destinatario_nome }}</strong>
+                        <div class="small text-muted">CPF: {{ cert.destinatario_cpf }}</div>
+                    </td>
+                    <td>
+                        <div class="fw-semibold text-secondary">{{ cert.atividade_nome }}</div>
+                        <small class="text-muted">{{ cert.evento_nome }}</small>
+                    </td>
+                    <td><span class="badge bg-light text-dark border">{{ cert.carga_horaria }}h</span></td>
+                    <td><small class="text-muted">{{ cert.data_emissao }}</small></td>
+                    <td>
+                        {% if cert.status == 'VALIDO' %}
+                            <span class="badge bg-success fs-6"><i class="bi bi-check-circle me-1"></i> VÁLIDO</span>
+                        {% else %}
+                            <span class="badge bg-danger fs-6"><i class="bi bi-slash-circle me-1"></i> REVOGADO</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end">
+                        <form action="/admin/certificados/{{ cert.id_certificado }}/status" method="POST" class="d-inline">
+                            {% if cert.status == 'VALIDO' %}
+                                <input type="hidden" name="novo_status" value="REVOGADO">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Deseja realmente revogar este certificado?');">
+                                    <i class="bi bi-slash-circle me-1"></i> Revogar
+                                </button>
+                            {% else %}
+                                <input type="hidden" name="novo_status" value="VALIDO">
+                                <button type="submit" class="btn btn-sm btn-outline-success">
+                                    <i class="bi bi-check2-circle me-1"></i> Reativar (Válido)
+                                </button>
+                            {% endif %}
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" class="text-center py-4 text-muted">Nenhum certificado registrado no sistema.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

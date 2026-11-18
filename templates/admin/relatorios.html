@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}Relatórios Administrativos Consolidados &bull; Staff{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold text-dark mb-1"><i class="bi bi-graph-up-arrow text-primary me-2"></i> Relatórios Consolidados</h2>
+        <p class="text-muted mb-0">Totalização de inscritos por evento e apuração de frequência dos participantes.</p>
+    </div>
+    <button onclick="window.print()" class="btn btn-outline-secondary">
+        <i class="bi bi-printer me-1"></i> Imprimir Relatório
+    </button>
+</div>
+
+<!-- Relatório 1: Total de Inscritos por Evento -->
+<div class="card card-custom shadow-sm border-0 mb-4">
+    <div class="card-header bg-white py-3 border-bottom">
+        <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-pie-chart-fill text-primary me-2"></i> Total de Inscritos por Evento</h5>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light small text-uppercase">
+                <tr>
+                    <th>Código</th>
+                    <th>Nome do Evento</th>
+                    <th>Status</th>
+                    <th>Total de Inscritos Gerais</th>
+                    <th>Participações em Atividades</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ev in inscritos_por_evento %}
+                <tr>
+                    <td><code>{{ ev.codigo }}</code></td>
+                    <td><strong class="text-dark">{{ ev.evento_nome }}</strong></td>
+                    <td>
+                        {% if ev.status == 'ATIVO' %}
+                            <span class="badge bg-success">Ativo</span>
+                        {% elif ev.status == 'CANCELADO' %}
+                            <span class="badge bg-danger">Cancelado</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Finalizado</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="badge bg-primary fs-6">{{ ev.total_inscritos }} inscrito(s)</span>
+                    </td>
+                    <td>
+                        <span class="badge bg-info text-dark fs-6">{{ ev.total_participacoes_atividades }} matrícula(s)</span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Relatório 2: Frequência Consolidada dos Participantes -->
+<div class="card card-custom shadow-sm border-0">
+    <div class="card-header bg-white py-3 border-bottom">
+        <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-bar-chart-line-fill text-info me-2"></i> Frequência Consolidada dos Participantes por Atividade</h5>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light small text-uppercase">
+                <tr>
+                    <th>Participante</th>
+                    <th>Evento / Atividade</th>
+                    <th>Dias Registrados</th>
+                    <th>Presenças</th>
+                    <th>Frequência Apurada (%)</th>
+                    <th>Critério Mínimo</th>
+                    <th>Status Certificado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for freq in frequencia_participantes %}
+                <tr>
+                    <td>
+                        <strong class="text-dark">{{ freq.participante_nome }}</strong>
+                        <div class="small text-muted">CPF: {{ freq.cpf }}</div>
+                    </td>
+                    <td>
+                        <div class="fw-semibold text-secondary">{{ freq.atividade_nome }}</div>
+                        <small class="text-muted">{{ freq.evento_nome }}</small>
+                    </td>
+                    <td><span class="badge bg-light text-dark border">{{ freq.total_dias_registrados }} dia(s)</span></td>
+                    <td><span class="badge bg-success">{{ freq.total_dias_presente }} presença(s)</span></td>
+                    <td>
+                        {% if freq.percentual_frequencia is not none %}
+                            {% if freq.percentual_frequencia >= freq.frequencia_minima %}
+                                <span class="badge bg-success fs-6">{{ freq.percentual_frequencia }}%</span>
+                            {% else %}
+                                <span class="badge bg-danger fs-6">{{ freq.percentual_frequencia }}%</span>
+                            {% endif %}
+                        {% else %}
+                            <span class="badge bg-secondary">Sem registro</span>
+                        {% endif %}
+                    </td>
+                    <td><small class="text-muted">Mín: {{ freq.frequencia_minima }}%</small></td>
+                    <td>
+                        {% if freq.codigo_validacao %}
+                            {% if freq.status_certificado == 'VALIDO' %}
+                                <span class="badge bg-success"><i class="bi bi-check-circle"></i> Válido ({{ freq.codigo_validacao }})</span>
+                            {% else %}
+                                <span class="badge bg-danger"><i class="bi bi-slash-circle"></i> Revogado</span>
+                            {% endif %}
+                        {% else %}
+                            <span class="badge bg-light text-muted border">Não emitido</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="text-center py-4 text-muted">Nenhum dado de frequência encontrado.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

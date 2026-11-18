@@ -1,0 +1,46 @@
+services:
+  db:
+    image: mariadb:lts
+    container_name: eventos_mariadb
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root_secret
+      MYSQL_DATABASE: eventos_db
+      MYSQL_USER: eventos_user
+      MYSQL_PASSWORD: eventos_pass
+    command: >
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - mariadb_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mariadb-admin", "ping", "-h", "localhost", "-u", "eventos_user", "-peventos_pass"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  web:
+    build: .
+    container_name: eventos_fastapi_web
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_USER: eventos_user
+      DB_PASSWORD: eventos_pass
+      DB_NAME: eventos_db
+      JWT_SECRET: bict_ufma_banco_de_dados_2026_secret_key
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./:/app
+
+volumes:
+  mariadb_data:

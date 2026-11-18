@@ -1,0 +1,286 @@
+{% extends "base.html" %}
+
+{% block title %}Controle e Auditoria de Presença &bull; Staff{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold text-dark mb-1"><i class="bi bi-calendar-check text-primary me-2"></i> Chamada e Auditoria de Presença</h2>
+        <p class="text-muted mb-0">Controle multidias por atividade e rastreamento de quem gerou ou removeu presenças.</p>
+    </div>
+</div>
+
+<!-- 1. Formulário de Pesquisa de Presenças de Determinado Participante -->
+<div class="card card-custom shadow-sm border-0 mb-4 border-start border-info border-4">
+    <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+        <h5 class="fw-bold text-info mb-0">
+            <i class="bi bi-search me-1"></i> Pesquisar Todas as Presenças de Determinado Participante
+        </h5>
+        {% if busca_participante %}
+            <a href="/admin/presencas" class="btn btn-sm btn-outline-secondary">Limpar Busca</a>
+        {% endif %}
+    </div>
+    <div class="card-body p-4">
+        <form action="/admin/presencas" method="GET" class="row g-2 align-items-center">
+            <div class="col-md-9">
+                <div class="input-group input-group-lg">
+                    <span class="input-group-text bg-light"><i class="bi bi-person-bounding-box"></i></span>
+                    <input type="text" name="busca_participante" class="form-control" 
+                           placeholder="Digite o Nome completo, parte do nome ou CPF do participante (ex: Erik ou 44455566677)" 
+                           value="{{ busca_participante if busca_participante else '' }}" required>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-info text-white btn-lg w-100">
+                    <i class="bi bi-search me-1"></i> Pesquisar Presenças
+                </button>
+            </div>
+        </form>
+
+        <!-- Resultados da Pesquisa por Participante -->
+        {% if busca_participante %}
+            <div class="mt-4">
+                <h6 class="fw-bold text-dark mb-2">
+                    Resultados para: <span class="text-primary">"{{ busca_participante }}"</span> 
+                    ({{ resultado_busca_participante|length }} registro(s) encontrado(s))
+                </h6>
+
+                {% if resultado_busca_participante %}
+                <div class="table-responsive border rounded bg-white">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light small text-uppercase">
+                            <tr>
+                                <th>Participante / CPF</th>
+                                <th>Evento & Atividade</th>
+                                <th>Data da Aula</th>
+                                <th>Situação</th>
+                                <th>Quem Gerou a Presença (Staff)</th>
+                                <th>Quem Removeu / Desmarcou (Staff)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in resultado_busca_participante %}
+                            <tr>
+                                <td>
+                                    <strong class="text-dark">{{ p.participante_nome }}</strong>
+                                    <div class="small text-muted">CPF: {{ p.cpf }}</div>
+                                </td>
+                                <td>
+                                    <strong class="text-primary">{{ p.atividade_nome }}</strong>
+                                    <div class="small text-muted">{{ p.evento_nome }}</div>
+                                </td>
+                                <td><span class="badge bg-light text-dark border">{{ p.data_aula }}</span></td>
+                                <td>
+                                    {% if p.presente %}
+                                        <span class="badge bg-success fs-6"><i class="bi bi-check-circle-fill me-1"></i> Presente</span>
+                                    {% else %}
+                                        <span class="badge bg-danger fs-6"><i class="bi bi-x-circle-fill me-1"></i> Ausente / Removida</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if p.staff_gerou_nome %}
+                                        <span class="badge bg-light text-dark border">
+                                            <i class="bi bi-person-check text-success"></i> {{ p.staff_gerou_nome }}
+                                        </span>
+                                        <div class="small text-muted mt-1">{{ p.data_registro }}</div>
+                                    {% else %}
+                                        <span class="text-muted small">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if p.staff_removeu_nome %}
+                                        <span class="badge bg-light text-danger border">
+                                            <i class="bi bi-person-x text-danger"></i> {{ p.staff_removeu_nome }}
+                                        </span>
+                                        <div class="small text-muted mt-1">{{ p.data_remocao }}</div>
+                                    {% else %}
+                                        <span class="text-muted small text-success"><i class="bi bi-dash"></i> (Não removida)</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-warning mb-0 small">
+                    <i class="bi bi-exclamation-circle me-1"></i> Nenhum registro de presença encontrado para o participante pesquisado.
+                </div>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- 2. Filtro de Chamada por Atividade e Data da Aula -->
+<div class="card card-custom shadow-sm border-0 mb-4">
+    <div class="card-header bg-white py-3 border-bottom">
+        <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-card-checklist text-primary me-2"></i> Realizar Chamada por Atividade</h5>
+    </div>
+    <div class="card-body p-4">
+        <form action="/admin/presencas" method="GET" class="row g-3 align-items-end">
+            <div class="col-md-5">
+                <label class="form-label fw-bold small">Selecione a Atividade Acadêmica *</label>
+                <select name="id_atividade" class="form-select form-select-lg" required>
+                    <option value="">-- Escolha a atividade --</option>
+                    {% for a in atividades %}
+                    <option value="{{ a.id_atividade }}" {% if id_atividade_selecionada == a.id_atividade %}selected{% endif %}>
+                        [{{ a.tipo }}] {{ a.nome }} ({{ a.data_atividade }} a {{ a.data_fim_efetiva }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label fw-bold small">Data da Aula / Sessão (data_aula) *</label>
+                <input type="date" name="data_aula" class="form-control form-select-lg" 
+                       value="{{ data_aula_selecionada }}"
+                       {% if atividade_selecionada_obj %}
+                           min="{{ atividade_selecionada_obj.data_atividade }}" 
+                           max="{{ atividade_selecionada_obj.data_fim_efetiva }}"
+                       {% endif %}
+                       required>
+                {% if atividade_selecionada_obj %}
+                <div class="form-text small text-primary fw-semibold">
+                    <i class="bi bi-info-circle"></i> Período permitido: {{ atividade_selecionada_obj.data_atividade }} até {{ atividade_selecionada_obj.data_fim_efetiva }}
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary btn-lg w-100">
+                    <i class="bi bi-list-check me-1"></i> Carregar Lista
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if id_atividade_selecionada %}
+<!-- Tabela de Chamada para a data selecionada com Auditoria de Staff -->
+<div class="card card-custom shadow-sm border-0 mb-4">
+    <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+        <div>
+            <h5 class="fw-bold mb-0 text-dark">
+                <i class="bi bi-people-fill text-success me-2"></i> Lista de Alunos Inscritos na Atividade
+            </h5>
+            <small class="text-muted">Data da Aula: <strong>{{ data_aula_selecionada }}</strong></small>
+        </div>
+        <span class="badge bg-secondary">{{ inscritos|length }} aluno(s) inscritos</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light small text-uppercase">
+                <tr>
+                    <th>Inscrição</th>
+                    <th>Participante</th>
+                    <th>Status Presença</th>
+                    <th>Última Auditoria (Staff)</th>
+                    <th class="text-end" style="width: 220px;">Ação</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for aluno in inscritos %}
+                <tr>
+                    <td><code>{{ aluno.numero_inscricao }}</code></td>
+                    <td>
+                        <strong class="text-dark">{{ aluno.participante_nome }}</strong>
+                        <div class="small text-muted">CPF: {{ aluno.cpf }}</div>
+                    </td>
+                    <td>
+                        {% if aluno.presente %}
+                            <span class="badge bg-success fs-6"><i class="bi bi-check-circle-fill me-1"></i> Presente</span>
+                        {% else %}
+                            <span class="badge bg-danger fs-6"><i class="bi bi-x-circle-fill me-1"></i> Ausente</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if aluno.presente and aluno.staff_gerou_nome %}
+                            <small class="text-success d-block">
+                                <i class="bi bi-check-lg"></i> Gerado por: <strong>{{ aluno.staff_gerou_nome }}</strong>
+                            </small>
+                            <small class="text-muted">{{ aluno.data_registro }}</small>
+                        {% elif not aluno.presente and aluno.staff_removeu_nome %}
+                            <small class="text-danger d-block">
+                                <i class="bi bi-x-lg"></i> Removido por: <strong>{{ aluno.staff_removeu_nome }}</strong>
+                            </small>
+                            <small class="text-muted">{{ aluno.data_remocao }}</small>
+                        {% else %}
+                            <small class="text-muted">Sem registro nesta data</small>
+                        {% endif %}
+                    </td>
+                    <td class="text-end">
+                        <form action="/admin/presencas" method="POST" class="d-inline">
+                            <input type="hidden" name="id_atividade" value="{{ id_atividade_selecionada }}">
+                            <input type="hidden" name="data_aula" value="{{ data_aula_selecionada }}">
+                            <input type="hidden" name="id_participacao" value="{{ aluno.id_participacao }}">
+                            
+                            {% if aluno.presente %}
+                                <input type="hidden" name="presente" value="0">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                    <i class="bi bi-x-circle me-1"></i> Remover Presença
+                                </button>
+                            {% else %}
+                                <input type="hidden" name="presente" value="1">
+                                <button type="submit" class="btn btn-sm btn-success">
+                                    <i class="bi bi-check2 me-1"></i> Confirmar Presença
+                                </button>
+                            {% endif %}
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="text-center py-4 text-muted">
+                        Nenhum aluno inscrito nesta atividade até o momento.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<!-- 3. Log de Auditoria em Tempo Real (Quem Gerou e Quem Removeu) -->
+<div class="card card-custom shadow-sm border-0">
+    <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+        <h6 class="fw-bold mb-0 text-dark"><i class="bi bi-shield-lock-fill text-secondary me-2"></i> Log de Auditoria das Ações do Staff (Quem Gerou / Removeu)</h6>
+        <span class="badge bg-secondary">Últimos registros</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 small">
+            <thead class="table-light">
+                <tr>
+                    <th>Data / Hora</th>
+                    <th>Ação Executada</th>
+                    <th>Staff Responsável</th>
+                    <th>Aluno / Participante</th>
+                    <th>Atividade & Data da Aula</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs_auditoria %}
+                <tr>
+                    <td><code>{{ log.data_hora }}</code></td>
+                    <td>
+                        {% if log.acao == 'GERADA' %}
+                            <span class="badge bg-success"><i class="bi bi-plus-circle me-1"></i> Presença Gerada</span>
+                        {% else %}
+                            <span class="badge bg-danger"><i class="bi bi-dash-circle me-1"></i> Presença Removida</span>
+                        {% endif %}
+                    </td>
+                    <td><strong>{{ log.staff_nome }}</strong> <span class="badge bg-light text-dark border">{{ log.staff_perfil }}</span></td>
+                    <td>{{ log.participante_nome }}</td>
+                    <td>{{ log.atividade_nome }} &bull; Aula: {{ log.data_aula }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="text-center py-3 text-muted">Nenhuma alteração recente no log de auditoria.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard Administrativo &bull; Staff{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold text-dark mb-1"><i class="bi bi-speedometer2 text-primary me-2"></i> Painel do Staff</h2>
+        <p class="text-muted mb-0">Gestão acadêmica de eventos, inscrições, presença multidias e relatórios.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="/admin/presencas" class="btn btn-primary"><i class="bi bi-calendar-check me-1"></i> Fazer Chamada</a>
+        <a href="/admin/relatorios" class="btn btn-outline-secondary"><i class="bi bi-graph-up me-1"></i> Ver Relatórios</a>
+    </div>
+</div>
+
+<!-- Cards de Métricas -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card card-custom p-3 border-start border-primary border-4">
+            <span class="text-muted text-uppercase fw-semibold small">Eventos</span>
+            <div class="d-flex justify-content-between align-items-center mt-2">
+                <h3 class="fw-bold mb-0 text-dark">{{ totais.eventos }}</h3>
+                <i class="bi bi-calendar-event fs-2 text-primary opacity-50"></i>
+            </div>
+            <a href="/admin/eventos" class="small text-primary mt-2 d-block text-decoration-none">Gerenciar eventos &rarr;</a>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card card-custom p-3 border-start border-info border-4">
+            <span class="text-muted text-uppercase fw-semibold small">Atividades</span>
+            <div class="d-flex justify-content-between align-items-center mt-2">
+                <h3 class="fw-bold mb-0 text-dark">{{ totais.atividades }}</h3>
+                <i class="bi bi-card-checklist fs-2 text-info opacity-50"></i>
+            </div>
+            <a href="/admin/atividades" class="small text-info mt-2 d-block text-decoration-none">Gerenciar atividades &rarr;</a>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card card-custom p-3 border-start border-warning border-4">
+            <span class="text-muted text-uppercase fw-semibold small">Inscrições</span>
+            <div class="d-flex justify-content-between align-items-center mt-2">
+                <h3 class="fw-bold mb-0 text-dark">{{ totais.inscricoes }}</h3>
+                <i class="bi bi-ticket-perforated fs-2 text-warning opacity-50"></i>
+            </div>
+            <a href="/admin/participantes" class="small text-warning mt-2 d-block text-decoration-none">Ver participantes &rarr;</a>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card card-custom p-3 border-start border-success border-4">
+            <span class="text-muted text-uppercase fw-semibold small">Certificados Válidos</span>
+            <div class="d-flex justify-content-between align-items-center mt-2">
+                <h3 class="fw-bold mb-0 text-success">{{ totais.certificados }}</h3>
+                <i class="bi bi-award fs-2 text-success opacity-50"></i>
+            </div>
+            <a href="/admin/certificados" class="small text-success mt-2 d-block text-decoration-none">Gerenciar certificados &rarr;</a>
+        </div>
+    </div>
+</div>
+
+<!-- Atividades e Eventos Recentes -->
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="card card-custom shadow-sm border-0">
+            <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-calendar-range text-primary me-2"></i> Eventos Cadastrados</h5>
+                <a href="/admin/eventos" class="btn btn-sm btn-outline-primary">Novo Evento</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light small">
+                        <tr>
+                            <th>Código</th>
+                            <th>Nome</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ev in eventos %}
+                        <tr>
+                            <td><code>{{ ev.codigo }}</code></td>
+                            <td><strong>{{ ev.nome }}</strong></td>
+                            <td>
+                                {% if ev.status == 'ATIVO' %}
+                                    <span class="badge bg-success">Ativo</span>
+                                {% elif ev.status == 'CANCELADO' %}
+                                    <span class="badge bg-danger">Cancelado</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Finalizado</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card card-custom shadow-sm border-0">
+            <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-card-list text-info me-2"></i> Atividades Recentes</h5>
+                <a href="/admin/atividades" class="btn btn-sm btn-outline-info">Nova Atividade</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light small">
+                        <tr>
+                            <th>Atividade</th>
+                            <th>Evento</th>
+                            <th>Carga Horária</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for atv in atividades %}
+                        <tr>
+                            <td>
+                                <strong>{{ atv.nome }}</strong>
+                                <div class="small text-muted">{{ atv.tipo }}</div>
+                            </td>
+                            <td><small>{{ atv.evento_nome }}</small></td>
+                            <td><span class="badge bg-light text-dark border">{{ atv.carga_horaria }}h</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
