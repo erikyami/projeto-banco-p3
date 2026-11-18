@@ -79,24 +79,41 @@
                             <td>
                                 {% if mem.status == 'ATIVO' %}
                                     <span class="badge bg-success">Ativo</span>
+                                {% elif mem.status == 'PENDENTE' %}
+                                    <span class="badge bg-warning text-dark"><i class="bi bi-clock-history"></i> Pendente de Aprovação</span>
                                 {% else %}
                                     <span class="badge bg-danger">Inativo</span>
                                 {% endif %}
                             </td>
                             <td class="text-end">
-                                <form action="/admin/staff/{{ mem.id_usuario }}/status" method="POST" class="d-inline">
-                                    {% if mem.status == 'ATIVO' %}
+                                {% if mem.status == 'PENDENTE' %}
+                                    <form action="/admin/staff/{{ mem.id_usuario }}/status" method="POST" class="d-inline">
+                                        <input type="hidden" name="novo_status" value="ATIVO">
+                                        <button type="submit" class="btn btn-sm btn-success" title="Aprovar Acesso de Staff">
+                                            <i class="bi bi-check-circle"></i> Aprovar
+                                        </button>
+                                    </form>
+                                    <form action="/admin/staff/{{ mem.id_usuario }}/status" method="POST" class="d-inline ms-1">
+                                        <input type="hidden" name="novo_status" value="INATIVO">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Recusar Solicitação">
+                                            <i class="bi bi-x-circle"></i> Recusar
+                                        </button>
+                                    </form>
+                                {% elif mem.status == 'ATIVO' %}
+                                    <form action="/admin/staff/{{ mem.id_usuario }}/status" method="POST" class="d-inline">
                                         <input type="hidden" name="novo_status" value="INATIVO">
                                         <button type="submit" class="btn btn-sm btn-outline-danger" title="Desativar">
                                             <i class="bi bi-person-x"></i> Desativar
                                         </button>
-                                    {% else %}
+                                    </form>
+                                {% else %}
+                                    <form action="/admin/staff/{{ mem.id_usuario }}/status" method="POST" class="d-inline">
                                         <input type="hidden" name="novo_status" value="ATIVO">
                                         <button type="submit" class="btn btn-sm btn-outline-success" title="Ativar">
                                             <i class="bi bi-person-check"></i> Ativar
                                         </button>
-                                    {% endif %}
-                                </form>
+                                    </form>
+                                {% endif %}
                             </td>
                         </tr>
                         {% endfor %}

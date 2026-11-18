@@ -1,21 +1,47 @@
 {% extends "base.html" %}
 
-{% block title %}Cadastro de Participante &bull; Eventos UFMA{% endblock %}
+{% block title %}Cadastro de Usuário &bull; Eventos UFMA{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-md-7 col-lg-6">
+    <div class="col-md-8 col-lg-7">
         <div class="card card-custom shadow-sm border-0">
             <div class="card-header bg-white py-3 border-bottom text-center">
-                <i class="bi bi-person-plus-fill fs-2 text-primary"></i>
-                <h4 class="fw-bold text-dark mt-1 mb-0">Cadastro de Participante</h4>
-                <p class="text-muted small mb-0">Crie seu perfil para se inscrever em eventos e atividades acadêmicas</p>
+                <i class="bi bi-person-plus-fill fs-1 text-primary"></i>
+                <h4 class="fw-bold text-dark mt-1 mb-1">Criar Nova Conta</h4>
+                <p class="text-muted small mb-0">Selecione o seu perfil de acesso e preencha o formulário abaixo</p>
             </div>
             <div class="card-body p-4">
+
+                <!-- Seletor de Perfil -->
+                <div class="btn-group w-100 mb-4" role="group">
+                    <input type="radio" class="btn-check" name="tipo_btn" id="btn_participante" value="PARTICIPANTE" {% if perfil_selecionado == 'PARTICIPANTE' or not perfil_selecionado %}checked{% endif %} onchange="atualizarForm('PARTICIPANTE')">
+                    <label class="btn btn-outline-primary fw-semibold py-2" for="btn_participante">
+                        <i class="bi bi-mortarboard me-1"></i> Participante
+                    </label>
+
+                    <input type="radio" class="btn-check" name="tipo_btn" id="btn_palestrante" value="PALESTRANTE" {% if perfil_selecionado == 'PALESTRANTE' %}checked{% endif %} onchange="atualizarForm('PALESTRANTE')">
+                    <label class="btn btn-outline-info text-dark fw-semibold py-2" for="btn_palestrante">
+                        <i class="bi bi-mic me-1"></i> Palestrante
+                    </label>
+
+                    <input type="radio" class="btn-check" name="tipo_btn" id="btn_staff" value="STAFF" {% if perfil_selecionado == 'STAFF' %}checked{% endif %} onchange="atualizarForm('STAFF')">
+                    <label class="btn btn-outline-warning text-dark fw-semibold py-2" for="btn_staff">
+                        <i class="bi bi-shield-lock me-1"></i> Staff (Apoio)
+                    </label>
+                </div>
+
+                <!-- Alerta Informativo para Staff -->
+                <div id="alerta_staff" class="alert alert-warning border-0 small mb-3 {% if perfil_selecionado != 'STAFF' %}d-none{% endif %}">
+                    <i class="bi bi-info-circle-fill me-1"></i> <strong>Atenção:</strong> Solicitações de cadastro para a Equipe de Apoio (Staff) exigem **aprovação prévia de um Administrador** antes da liberação do primeiro acesso ao sistema.
+                </div>
+
                 <form action="/cadastro" method="POST">
+                    <input type="hidden" name="tipo_cadastro" id="tipo_cadastro_hidden" value="{{ perfil_selecionado or 'PARTICIPANTE' }}">
+
                     <div class="mb-3">
                         <label class="form-label small fw-bold">Nome Completo *</label>
-                        <input type="text" name="nome" class="form-control" placeholder="Ex: Lucas Gabriel Silva" required>
+                        <input type="text" name="nome" class="form-control" placeholder="Ex: Francisco Erik da Silva" required>
                     </div>
 
                     <div class="row g-2 mb-3">
@@ -24,15 +50,21 @@
                             <input type="text" name="cpf" maxlength="11" pattern="\d{11}" class="form-control" placeholder="12345678901" required>
                             <div class="form-text small">Apenas números.</div>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold">Telefone</label>
+                        <div class="col-md-6" id="campo_telefone">
+                            <label class="form-label small fw-bold">Telefone / WhatsApp</label>
                             <input type="text" name="telefone" class="form-control" placeholder="(98) 98888-7777">
                         </div>
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label small fw-bold">E-mail Acadêmico / Pessoal *</label>
-                        <input type="email" name="email" class="form-control" placeholder="lucas@discente.ufma.br" required>
+                        <label class="form-label small fw-bold">E-mail *</label>
+                        <input type="email" name="email" class="form-control" placeholder="usuario@ufma.br" required>
+                    </div>
+
+                    <!-- Campo exclusivo para Palestrante: Currículo / Titulação -->
+                    <div class="mb-3 {% if perfil_selecionado != 'PALESTRANTE' %}d-none{% endif %}" id="campo_curriculo">
+                        <label class="form-label small fw-bold">Currículo / Mini Biografia Acadêmica *</label>
+                        <textarea name="curriculo" class="form-control" rows="3" placeholder="Titulação, áreas de pesquisa, formação ou experiência profissional..."></textarea>
                     </div>
 
                     <div class="mb-4">
@@ -40,17 +72,46 @@
                         <input type="password" name="senha" class="form-control" placeholder="Mínimo 6 caracteres" minlength="6" required>
                     </div>
 
-                    <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
-                        <i class="bi bi-check-lg me-1"></i> Concluir Cadastro
+                    <button type="submit" id="btn_submit" class="btn btn-primary w-100 py-2 fw-semibold">
+                        <i class="bi bi-check-lg me-1"></i> <span id="btn_submit_text">Concluir Cadastro</span>
                     </button>
                 </form>
 
                 <div class="mt-4 pt-3 border-top text-center">
-                    <span class="small text-muted">Já tem uma conta?</span>
-                    <a href="/login?perfil=PARTICIPANTE" class="small fw-bold text-primary ms-1">Fazer Login</a>
+                    <span class="small text-muted">Já possui conta?</span>
+                    <a href="/login" class="small fw-bold text-primary ms-1">Fazer Login</a>
                 </div>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function atualizarForm(tipo) {
+    document.getElementById('tipo_cadastro_hidden').value = tipo;
+    const campoCurriculo = document.getElementById('campo_curriculo');
+    const alertaStaff = document.getElementById('alerta_staff');
+    const btnSubmit = document.getElementById('btn_submit');
+    const btnSubmitText = document.getElementById('btn_submit_text');
+
+    if (tipo === 'PALESTRANTE') {
+        campoCurriculo.classList.remove('d-none');
+        alertaStaff.classList.add('d-none');
+        btnSubmit.className = 'btn btn-info w-100 py-2 fw-semibold text-dark';
+        btnSubmitText.textContent = 'Concluir Cadastro de Palestrante';
+    } else if (tipo === 'STAFF') {
+        campoCurriculo.classList.add('d-none');
+        alertaStaff.classList.remove('d-none');
+        btnSubmit.className = 'btn btn-warning w-100 py-2 fw-semibold text-dark';
+        btnSubmitText.textContent = 'Solicitar Cadastro na Equipe de Apoio';
+    } else {
+        campoCurriculo.classList.add('d-none');
+        alertaStaff.classList.add('d-none');
+        btnSubmit.className = 'btn btn-primary w-100 py-2 fw-semibold';
+        btnSubmitText.textContent = 'Concluir Cadastro de Participante';
+    }
+}
+</script>
 {% endblock %}

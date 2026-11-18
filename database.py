@@ -28,6 +28,13 @@ async def init_db_pool(retries: int = 15, delay: int = 2) -> aiomysql.Pool:
                 minsize=2,
                 maxsize=15
             )
+            # Migração segura para suportar status PENDENTE em instalações existentes
+            try:
+                async with pool.acquire() as conn:
+                    async with conn.cursor() as cursor:
+                        await cursor.execute("ALTER TABLE usuario MODIFY COLUMN status ENUM('ATIVO', 'INATIVO', 'PENDENTE') DEFAULT 'PENDENTE'")
+            except Exception as mig_err:
+                pass
             print("[DB] Pool de conexões MySQL/MariaDB criado com sucesso!")
             return pool
         except Exception as e:

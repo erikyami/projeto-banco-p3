@@ -47,23 +47,26 @@ projeto-banco-p3/
     ├── base.html              # Layout base com navbar responsiva
     ├── index.html             # Página inicial do portal
     ├── login.html             # Formulário de login por perfil
-    ├── cadastro.html          # Cadastro de novos participantes
+    ├── cadastro.html          # Cadastro unificado (Participante, Palestrante, Staff)
     ├── sobre.html             # Página acadêmica obrigatória
     ├── verificar_certificado.html # Validação pública e visualização A4
     ├── admin/                 # Telas exclusivas da comissão organizadora / staff
     │   ├── dashboard.html       # Painel de controle e atalhos rápidos
+    │   ├── perfil.html          # Edição de dados e senha do membro da equipe
     │   ├── eventos.html         # CRUD completo de eventos
     │   ├── atividades.html      # CRUD de atividades e critérios de certificação
     │   ├── presencas.html       # Chamada multidias, pesquisa e auditoria
     │   ├── participantes.html   # Gestão de participantes inscritos
     │   ├── palestrantes.html    # Gestão de palestrantes e vínculos
     │   ├── certificados.html    # Gestão e revogação de certificados
-    │   ├── staff.html           # Gestão de membros da equipe de apoio
+    │   ├── staff.html           # Gestão e aprovação de membros da equipe de apoio
     │   └── relatorios.html      # Estatísticas e métricas de frequência
     ├── participante/          # Telas exclusivas do discente
-    │   └── painel.html          # Inscrições, presenças e certificados do discente
+    │   ├── painel.html          # Inscrições, presenças e certificados do discente
+    │   └── perfil.html          # Edição de dados cadastrais e senha
     └── palestrante/           # Telas exclusivas do docente / palestrante
-        └── painel.html          # Grade de palestras e emissão de certificados
+        ├── painel.html          # Grade de palestras e emissão de certificados
+        └── perfil.html          # Edição de currículo, contatos e senha
 ```
 
 ---
@@ -122,7 +125,8 @@ erDiagram
 ### Detalhamento das Tabelas e Cardinalidades
 
 1. **`usuario` (Staff / Apoio):**
-   * Armazena os membros da equipe organizadora e monitores com senhas criptografadas em SHA-256 e perfis (`APOIO`, `ADMIN`).
+   * Armazena os membros da equipe organizadora e monitores com senhas criptografadas em SHA-256, perfis (`APOIO`, `ADMIN`) e controle de status (`ATIVO`, `INATIVO`, `PENDENTE`).
+   * Suporta auto-cadastro de novos membros com status `PENDENTE` aguardando aprovação prévia de um administrador.
    * **Relacionamento:** `usuario (1) -> (N) presenca`: cada registro de chamada é assinado pelo membro do staff que a gerou (`id_usuario`) ou removeu (`id_usuario_remocao`).
    * **Relacionamento:** `usuario (1) -> (N) log_presenca`: rastreia todas as alterações efetuadas pelo usuário.
 
@@ -189,7 +193,7 @@ Abaixo está o catálogo completo de metadados das **11 tabelas** do sistema, es
 | **`email`** | `VARCHAR(150)` (formato e-mail válido) | **UK** | NÃO | E-mail de autenticação no sistema. Chave de unicidade (`UNIQUE`). |
 | **`senha_hash`** | `VARCHAR(255)` (hash hex SHA-256 de 64 caracteres) | - | NÃO | Hash criptográfico da senha de acesso do usuário. |
 | **`perfil`** | `VARCHAR(50)` (Ex: `'APOIO'`, `'ADMIN'`) | - | SIM | Nível de acesso administrativo. Default: `'APOIO'`. |
-| **`status`** | `ENUM('ATIVO', 'INATIVO')` | - | SIM | Situação cadastral do usuário. Default: `'ATIVO'`. |
+| **`status`** | `ENUM('ATIVO', 'INATIVO', 'PENDENTE')` | - | SIM | Situação cadastral do usuário. Auto-cadastros entram como `'PENDENTE'` até aprovação pelo ADMIN. Default: `'PENDENTE'`. |
 | **`data_cadastro`** | `DATETIME` | - | SIM | Data e horário de criação do registro. Default: `CURRENT_TIMESTAMP`. |
 
 ---
@@ -454,6 +458,31 @@ O sistema possui controle completo e auditável de frequência acadêmica acess�
 
 ---
 
+## 👤 Gestão de Perfis e Fluxo de Aprovação de Staff
+
+O sistema implementa autonomia no cadastro e ciclo completo de gerenciamento de dados cadastrais (CRUD próprio de perfil) para todos os perfis:
+
+### 1. Auto-Cadastro Público Unificado (`/cadastro`)
+A página `/cadastro` oferece um seletor visual em abas para 3 modalidades de cadastro:
+* **Participante:** Registro de discentes e ouvintes com Nome, CPF, E-mail, Telefone e Senha.
+* **Palestrante:** Registro público de docentes e instrutores convidados com mini biografia acadêmica, titulações e áreas de atuação.
+* **Equipe de Apoio / Staff:** Solicitação de acesso para monitores e equipe organizadora.
+
+### 2. Fluxo de Aprovação de Staff pelo Administrador
+Para garantir a segurança do sistema e impedir auto-promoção indevida a privilégios administrativos:
+* As solicitações de Staff são inseridas na tabela `usuario` com **`status = 'PENDENTE'`**.
+* No login, tentativas de acesso com conta pendente são bloqueadas exibindo: *"Seu cadastro de Staff está PENDENTE de aprovação por um Administrador."*
+* No painel de equipe (`/admin/staff`), o Administrador visualiza as solicitações com destaque visual e botões diretos de **Aprovar** (`status = 'ATIVO'`) ou **Recusar** (`status = 'INATIVO'`).
+
+### 3. Edição de Informações e Redefinição de Senha
+Todos os perfis possuem tela própria para atualização de seus dados e alteração de senha:
+* **Participante (`/participante/perfil`):** Atualização de Nome, E-mail (com validação de duplicidade) e Telefone.
+* **Palestrante (`/palestrante/perfil`):** Atualização de Nome, E-mail, Telefone e Currículo/Titulação docente.
+* **Staff (`/admin/perfil`):** Atualização de Nome e redefinição de senha da equipe.
+* **Sincronização de Sessão:** Ao salvar alterações de nome ou e-mail, os cookies HTTP-Only de sessão JWT são renovados automaticamente em tempo real.
+
+---
+
 ## 🔒 Credenciais de Acesso Pré-Configuradas
 
 | Perfil | E-mail | Senha | Destino Pós-Login |
@@ -507,8 +536,8 @@ Todas as operações são executadas via **SQL puro** (Raw SQL assíncrono via `
 | `GET` | `/sobre` | **Página institucional obrigatória** com identificação formal dos discentes e docente. |
 | `GET` | `/login` | Tela de autenticação com seletor de perfil (Staff, Participante, Palestrante). |
 | `POST` | `/login` | Processamento do login, verificação de hash SHA-256 e emissão do cookie JWT. |
-| `GET` | `/cadastro` | Formulário público de cadastro para discentes/ouvintes. |
-| `POST` | `/cadastro` | Cadastro de participante com validação de unicidade de CPF e e-mail via Raw SQL. |
+| `GET` | `/cadastro` | Formulário público unificado de cadastro com seletor de perfil (Participante, Palestrante e Staff). |
+| `POST` | `/cadastro` | Processamento de cadastro por perfil via Raw SQL (com status `PENDENTE` para solicitações de Staff). |
 | `GET` | `/logout` | Destruição da sessão/cookie e redirecionamento seguro para a home. |
 | `GET` | `/verificar` | Validador público de certificados com renderização A4 para impressão. |
 | `GET` | `/api/verificar/{codigo}` | Endpoint REST público retornando metadados de validação em JSON. |
@@ -517,6 +546,8 @@ Todas as operações são executadas via **SQL puro** (Raw SQL assíncrono via `
 | Método | Endpoint | Perfil | Descrição |
 | :---: | :--- | :---: | :--- |
 | `GET` | `/admin/dashboard` | `APOIO`, `ADMIN` | Visão geral com contadores rápidos de eventos, participantes e certificados. |
+| `GET` | `/admin/perfil` | `APOIO`, `ADMIN` | Tela de visualização e edição do próprio perfil e redefinição de senha do Staff. |
+| `POST` | `/admin/perfil` | `APOIO`, `ADMIN` | Atualização cadastral do próprio usuário Staff e renovação do cookie de sessão. |
 | `GET` | `/admin/eventos` | `APOIO`, `ADMIN` | Listagem e formulário de cadastro/edição de eventos acadêmicos. |
 | `POST` | `/admin/eventos/salvar` | `APOIO`, `ADMIN` | Gravação ou atualização de evento via SQL puro. |
 | `POST` | `/admin/eventos/cancelar/{id}` | `ADMIN` | Cancelamento formal de evento acadêmico. |
@@ -532,14 +563,17 @@ Todas as operações são executadas via **SQL puro** (Raw SQL assíncrono via `
 | `POST` | `/admin/palestrantes/salvar` | `APOIO`, `ADMIN` | Cadastro/edição de palestrantes e currículo. |
 | `GET` | `/admin/certificados` | `APOIO`, `ADMIN` | Gestão de certificados de participantes e palestrantes. |
 | `POST` | `/admin/certificados/status` | `ADMIN` | Alteração de status do certificado (`VALIDO` / `REVOGADO`). |
-| `GET` | `/admin/staff` | `ADMIN` | Gestão da equipe de apoio e criação de novos usuários administradores. |
+| `GET` | `/admin/staff` | `ADMIN` | Gestão da equipe, aprovação de solicitações pendentes e novos administradores. |
 | `POST` | `/admin/staff/salvar` | `ADMIN` | Criação e atualização de membros da equipe de apoio. |
+| `POST` | `/admin/staff/{id}/status` | `ADMIN` | Aprovação (`ATIVO`) ou recusa/inativação (`INATIVO`) de membros da equipe. |
 | `GET` | `/admin/relatorios` | `APOIO`, `ADMIN` | Painel estatístico consolidado com taxas de ocupação e frequência. |
 
 ### 3. Rotas da Área do Participante (`/participante/*`)
 | Método | Endpoint | Perfil | Descrição |
 | :---: | :--- | :---: | :--- |
 | `GET` | `/participante/painel` | `PARTICIPANTE` | Painel do aluno com inscrições, frequência detalhada e certificados. |
+| `GET` | `/participante/perfil` | `PARTICIPANTE` | Visualização e edição de dados cadastrais (Nome, E-mail, Telefone) e senha. |
+| `POST` | `/participante/perfil` | `PARTICIPANTE` | Atualização cadastral com validação de unicidade de e-mail e renovação de JWT. |
 | `POST` | `/participante/inscrever-evento` | `PARTICIPANTE` | Inscrição no evento acadêmico (bloqueia duplicidade via `UNIQUE`). |
 | `POST` | `/participante/inscrever-atividade` | `PARTICIPANTE` | Matrícula em minicursos, palestras e oficinas do evento. |
 
@@ -547,6 +581,8 @@ Todas as operações são executadas via **SQL puro** (Raw SQL assíncrono via `
 | Método | Endpoint | Perfil | Descrição |
 | :---: | :--- | :---: | :--- |
 | `GET` | `/palestrante/painel` | `PALESTRANTE` | Grade de atividades ministradas e visualização de certificados docentes. |
+| `GET` | `/palestrante/perfil` | `PALESTRANTE` | Visualização e edição de dados, mini biografia/currículo, contatos e senha. |
+| `POST` | `/palestrante/perfil` | `PALESTRANTE` | Atualização cadastral docente e renovação do cookie de sessão JWT. |
 
 ---
 

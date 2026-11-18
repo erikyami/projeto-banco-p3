@@ -9,7 +9,7 @@ from fastapi.templating import Jinja2Templates
 from pymysql.err import IntegrityError
 
 from database import fetch_all, fetch_one, execute_query
-from auth import require_auth, hash_senha
+from auth import require_auth, hash_senha, criar_token, COOKIE_NAME
 
 router = APIRouter(prefix="/admin", tags=["Administração / Staff"])
 templates = Jinja2Templates(directory="templates")
@@ -106,6 +106,58 @@ async def alternar_status_staff(
         url=f"/admin/staff?msg=Status+do+usuario+alterado+para+{novo_status}!&tipo=info",
         status_code=status.HTTP_303_SEE_OTHER
     )
+
+
+# ====================================================================
+# PERFIL DO STAFF (EDIÇÃO DE INFORMAÇÕES PRÓPRIAS)
+# ====================================================================
+
+@router.get("/perfil", response_class=HTMLResponse)
+async def ver_perfil_staff(request: Request, msg: str = None, tipo: str = "info", user: dict = Depends(verificar_staff)):
+    dados_staff = await fetch_one(
+        "SELECT id_usuario, cpf, nome, email, perfil, status, data_cadastro FROM usuario WHERE id_usuario = %s",
+        (user["id"],)
+    )
+    return templates.TemplateResponse(
+        request=request,
+        name="admin/perfil.html",
+        context={"user": user, "staff": dados_staff, "msg": msg, "tipo": tipo}
+    )
+
+
+@router.post("/perfil")
+async def atualizar_perfil_staff(
+    request: Request,
+    nome: str = Form(...),
+    senha: Optional[str] = Form(None),
+    user: dict = Depends(verificar_staff)
+):
+    nome_limpo = nome.strip()
+    id_usuario = user["id"]
+
+    if senha and len(senha.strip()) >= 6:
+        senha_hash = hash_senha(senha.strip())
+        await execute_query(
+            "UPDATE usuario SET nome = %s, senha_hash = %s WHERE id_usuario = %s",
+            (nome_limpo, senha_hash, id_usuario)
+        )
+    else:
+        await execute_query(
+            "UPDATE usuario SET nome = %s WHERE id_usuario = %s",
+            (nome_limpo, id_usuario)
+        )
+
+    # Atualiza o token na sessão com o novo nome
+    token_payload = {
+        "id": user["id"],
+        "nome": nome_limpo,
+        "email": user["email"],
+        "perfil": user["perfil"]
+    }
+    novo_jwt = criar_token(token_payload)
+    resp = RedirectResponse(url="/admin/perfil?msg=Perfil+atualizado+com+sucesso!&tipo=success", status_code=status.HTTP_303_SEE_OTHER)
+    resp.set_cookie(key=COOKIE_NAME, value=novo_jwt, httponly=True, max_age=86400, samesite="lax")
+    return resp
 
 
 # ====================================================================

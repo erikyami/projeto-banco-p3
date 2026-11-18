@@ -6,7 +6,7 @@ from fastapi.templating import Jinja2Templates
 from pymysql.err import IntegrityError
 
 from database import fetch_all, fetch_one, execute_query
-from auth import require_auth
+from auth import require_auth, hash_senha, criar_token, COOKIE_NAME
 
 router = APIRouter(prefix="/participante", tags=["Área do Participante"])
 templates = Jinja2Templates(directory="templates")
@@ -175,5 +175,74 @@ async def inscrever_atividade(id_atividade: int = Form(...), user: dict = Depend
     except IntegrityError:
         return RedirectResponse(
             url="/participante/painel?msg=Voce+ja+esta+inscrito+nesta+atividade.&tipo=warning",
+            status_code=status.HTTP_303_SEE_OTHER
+        )
+
+
+# ====================================================================
+# PERFIL DO PARTICIPANTE (VISUALIZAÇÃO E EDIÇÃO)
+# ====================================================================
+
+@router.get("/perfil", response_class=HTMLResponse)
+async def ver_perfil_participante(request: Request, msg: str = None, tipo: str = "info", user: dict = Depends(verificar_participante)):
+    dados_part = await fetch_one(
+        "SELECT id_participante, cpf, nome, email, telefone FROM participante WHERE id_participante = %s",
+        (user["id"],)
+    )
+    return templates.TemplateResponse(
+        request=request,
+        name="participante/perfil.html",
+        context={"user": user, "participante": dados_part, "msg": msg, "tipo": tipo}
+    )
+
+
+@router.post("/perfil")
+async def atualizar_perfil_participante(
+    request: Request,
+    nome: str = Form(...),
+    email: str = Form(...),
+    telefone: Optional[str] = Form(None),
+    senha: Optional[str] = Form(None),
+    user: dict = Depends(verificar_participante)
+):
+    id_part = user["id"]
+    nome_limpo = nome.strip()
+    email_limpo = email.strip().lower()
+
+    try:
+        if senha and len(senha.strip()) >= 6:
+            senha_hash = hash_senha(senha.strip())
+            await execute_query("""
+                UPDATE participante 
+                SET nome = %s, email = %s, telefone = %s, senha_hash = %s
+                WHERE id_participante = %s
+            """, (nome_limpo, email_limpo, telefone, senha_hash, id_part))
+        else:
+            await execute_query("""
+                UPDATE participante 
+                SET nome = %s, email = %s, telefone = %s
+                WHERE id_participante = %s
+            """, (nome_limpo, email_limpo, telefone, id_part))
+
+        # Atualiza a sessão
+        token_payload = {
+            "id": id_part,
+            "nome": nome_limpo,
+            "email": email_limpo,
+            "perfil": "PARTICIPANTE"
+        }
+        novo_jwt = criar_token(token_payload)
+        resp = RedirectResponse(url="/participante/perfil?msg=Dados+cadastrais+atualizados+com+sucesso!&tipo=success", status_code=status.HTTP_303_SEE_OTHER)
+        resp.set_cookie(key=COOKIE_NAME, value=novo_jwt, httponly=True, max_age=86400, samesite="lax")
+        return resp
+
+    except IntegrityError as e:
+        if e.args[0] == 1062:
+            return RedirectResponse(
+                url="/participante/perfil?msg=ERRO:+Ja+existe+outro+usuario+cadastrado+com+este+E-mail.&tipo=danger",
+                status_code=status.HTTP_303_SEE_OTHER
+            )
+        return RedirectResponse(
+            url=f"/participante/perfil?msg=Erro+ao+atualizar:+{e}&tipo=danger",
             status_code=status.HTTP_303_SEE_OTHER
         )
