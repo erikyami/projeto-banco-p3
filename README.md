@@ -1,6 +1,6 @@
 # Sistema de Gestão de Eventos Acadêmicos - BICT/UFMA
 
-Sistema web para gerenciamento e certificação de eventos acadêmicos, desenvolvido com **Python (FastAPI)**, **Raw SQL puro (aiomysql)**, **MariaDB/MySQL** (`mariadb:lts`) e orquestrado via **Docker Compose**, em conformidade com o projeto da disciplina de Banco de Dados.
+Sistema web completo para gerenciamento, controle de frequência multidias e certificação de eventos acadêmicos, desenvolvido com **Python (FastAPI)**, **Raw SQL puro (aiomysql)**, **MariaDB/MySQL** (`mariadb:lts`) e orquestrado via **Docker Compose**, em conformidade rigorosa com o modelo relacional em 3ª Forma Normal (3FN) da disciplina de Banco de Dados.
 
 ---
 
@@ -12,16 +12,94 @@ Acesse a página institucional em: `http://localhost:8000/sobre`
 
 ---
 
+## 🛠️ Stack Tecnológica e Decisões de Arquitetura
+
+* **Backend:** Python 3.11 com [FastAPI](https://fastapi.tiangolo.com/) (assíncrono, alta performance).
+* **Banco de Dados:** [MariaDB LTS](https://mariadb.org/) (compatível com MySQL 8.0/8.4, rodando em contêiner otimizado).
+* **Acesso ao Banco (Zero ORM):** Utilização estrita de **Raw SQL puro** com driver assíncrono [`aiomysql`](https://github.com/aio-libs/aiomysql) gerenciado via pool de conexões (`database.py`). Todas as consultas utilizam parâmetros seguros (`%s`) contra SQL Injection.
+* **Frontend:** Templates server-side com [Jinja2](https://palletsprojects.com/p/jinja/), estilizados com [Bootstrap 5](https://getbootstrap.com/) e ícones Bootstrap Icons via CDN.
+* **Autenticação:** Baseada em sessões seguras com tokens JWT criptografados armazenados em cookies HTTP-Only, com senhas em hash SHA-256 e controle de acesso por perfil (`ADMIN`, `APOIO`, `PARTICIPANTE`, `PALESTRANTE`).
+* **DevOps & Infraestrutura:** Orquestração completa em contêineres via [Docker Compose](https://docs.docker.com/compose/).
+
+---
+
+## 📁 Estrutura de Diretórios do Projeto
+
+```text
+projeto-banco-p3/
+├── auth.py                  # Autenticação JWT, hashing SHA-256 e RBAC
+├── database.py              # Pool de conexões assíncronas aiomysql (Raw SQL)
+├── main.py                  # Ponto de entrada FastAPI e registro de rotas
+├── requirements.txt         # Dependências Python (sem ORMs)
+├── Dockerfile               # Imagem da aplicação FastAPI Web
+├── docker-compose.yml       # Orquestração do MariaDB LTS e Web FastAPI
+├── init.sql                 # DDL de criação do schema 3FN e dados iniciais (seeds)
+├── .env.example           # Modelo de variáveis de ambiente do projeto
+├── .gitignore               # Configuração detalhada de arquivos ignorados pelo Git
+├── README.md                # Documentação técnica e dicionário de dados
+├── routers/                 # Divisão modular de rotas da aplicação
+│   ├── auth_routes.py         # Login, logout e cadastro unificado
+│   ├── public_routes.py       # Home, sobre, verificação pública de certificados
+│   ├── staff_routes.py        # Painel admin, CRUDs, presenças e relatórios
+│   ├── participante_routes.py # Inscrições e histórico do participante
+│   └── palestrante_routes.py  # Atividades e certificados do docente
+└── templates/               # Interfaces Jinja2 com Bootstrap 5
+    ├── base.html              # Layout base com navbar responsiva
+    ├── index.html             # Página inicial do portal
+    ├── login.html             # Formulário de login por perfil
+    ├── cadastro.html          # Cadastro de novos participantes
+    ├── sobre.html             # Página acadêmica obrigatória
+    ├── verificar_certificado.html # Validação pública e visualização A4
+    ├── admin/                 # Telas exclusivas da comissão organizadora / staff
+    │   ├── dashboard.html       # Painel de controle e atalhos rápidos
+    │   ├── eventos.html         # CRUD completo de eventos
+    │   ├── atividades.html      # CRUD de atividades e critérios de certificação
+    │   ├── presencas.html       # Chamada multidias, pesquisa e auditoria
+    │   ├── participantes.html   # Gestão de participantes inscritos
+    │   ├── palestrantes.html    # Gestão de palestrantes e vínculos
+    │   ├── certificados.html    # Gestão e revogação de certificados
+    │   ├── staff.html           # Gestão de membros da equipe de apoio
+    │   └── relatorios.html      # Estatísticas e métricas de frequência
+    ├── participante/          # Telas exclusivas do discente
+    │   └── painel.html          # Inscrições, presenças e certificados do discente
+    └── palestrante/           # Telas exclusivas do docente / palestrante
+        └── painel.html          # Grade de palestras e emissão de certificados
+```
+
+---
+
 ## 🏛️ Relações entre as Tabelas (Modelo Relacional / DER)
 
-O banco de dados foi estruturado em **3ª Forma Normal (3FN)** com 10 tabelas relacionais interligadas por chaves estrangeiras (`FOREIGN KEY`), garantindo integridade referencial, ausência de redundâncias e consistência transacional:
+O banco de dados foi estruturado rigorosamente na **3ª Forma Normal (3FN)**, composto por **11 tabelas relacionais** (10 tabelas de negócio e relacionamento + 1 tabela de auditoria e conformidade).
+
+### Diagrama Entidade-Relacionamento (Mermaid)
+
+```mermaid
+erDiagram
+    USUARIO ||--o{ PRESENCA : "registra / remove"
+    USUARIO ||--o{ LOG_PRESENCA : "audita acao de"
+    PARTICIPANTE ||--o{ INSCRICAO : "realiza"
+    EVENTO ||--o{ INSCRICAO : "recebe"
+    EVENTO ||--o{ ATIVIDADE : "composto por"
+    ATIVIDADE ||--o{ ATIVIDADE_PALESTRANTE : "vinculada a"
+    PALESTRANTE ||--o{ ATIVIDADE_PALESTRANTE : "ministra"
+    INSCRICAO ||--o{ PARTICIPACAO_ATIVIDADE : "matricula em"
+    ATIVIDADE ||--o{ PARTICIPACAO_ATIVIDADE : "possui inscritos"
+    PARTICIPACAO_ATIVIDADE ||--o{ PRESENCA : "possui chamadas"
+    PARTICIPACAO_ATIVIDADE ||--o{ LOG_PRESENCA : "registra historico"
+    PARTICIPACAO_ATIVIDADE ||--o| CERTIFICADO : "gera (tipo PARTICIPANTE)"
+    PALESTRANTE ||--o{ CERTIFICADO : "recebe (tipo PALESTRANTE)"
+    ATIVIDADE ||--o{ CERTIFICADO : "docencia em (tipo PALESTRANTE)"
+```
+
+### Diagrama ASCII Simplificado
 
 ```
                   +-------------------+
                   |      usuario      | (Equipe de Apoio / Staff)
                   +-------------------+
-                            | (registra)
-                            v
+                   | (registra)     | (audita)
+                   v                v
 +--------------+    +-------------------+    +--------------------+
 | participante |<---|     inscricao     |<---|       evento       |
 +--------------+    +-------------------+    +--------------------+
@@ -30,18 +108,23 @@ O banco de dados foi estruturado em **3ª Forma Normal (3FN)** com 10 tabelas re
                     +-------------------+    +--------------------+    +-----------------------+
                     | participacao_ativ |<---|     atividade      |<---| atividade_palestrante |
                     +-------------------+    +--------------------+    +-----------------------+
-                      |               |                 ^                          ^
-                      v               v                 |                          |
-               +------------+  +-------------+          |                 +-------------+
-               |  presenca  |  | certificado |----------+                 | palestrante |
-               +------------+  +-------------+--------------------------->+-------------+
+                      |         |     |                 ^                          ^
+                      |         |     v                 |                          |
+                      |         |   +---------------+   |                 +-------------+
+                      |         |   | log_presenca  |   |                 | palestrante |
+                      |         |   +---------------+   |                 +-------------+
+                      v         v                       |                        |
+                +------------+  +-------------+---------+                        |
+                |  presenca  |  | certificado |----------------------------------+
+                +------------+  +-------------+
 ```
 
 ### Detalhamento das Tabelas e Cardinalidades
 
 1. **`usuario` (Staff / Apoio):**
    * Armazena os membros da equipe organizadora e monitores com senhas criptografadas em SHA-256 e perfis (`APOIO`, `ADMIN`).
-   * **Relacionamento:** `usuario (1) -> (N) presenca`: cada registro de chamada é assinado pelo membro do staff que a realizou (`id_usuario`).
+   * **Relacionamento:** `usuario (1) -> (N) presenca`: cada registro de chamada é assinado pelo membro do staff que a gerou (`id_usuario`) ou removeu (`id_usuario_remocao`).
+   * **Relacionamento:** `usuario (1) -> (N) log_presenca`: rastreia todas as alterações efetuadas pelo usuário.
 
 2. **`participante`:**
    * Cadastro dos discentes e ouvintes (`id_participante`, `cpf`, `nome`, `email`, `telefone`, `senha_hash`).
@@ -73,23 +156,27 @@ O banco de dados foi estruturado em **3ª Forma Normal (3FN)** com 10 tabelas re
 
 7. **`participacao_atividade`:**
    * Vincula a inscrição do participante a uma atividade específica do evento.
-   * **Garantia de Unicidade:** Restrição `UNIQUE (id_inscricao, id_atividade)`.
+   * **Garantia de Unicidade:** Restrição `UNIQUE (id_inscricao, id_atividade)`, impedindo duplicidade na mesma atividade.
 
 8. **`presenca` (Multidias com Validação de Intervalo):**
    * Controla o registro de frequência por sessão/dia.
    * **Chave Única Composta:** `UNIQUE (id_participacao, data_aula)`, permitindo chamada em múltiplos dias para a mesma atividade sem duplicidade na mesma data.
    * **Regra de Negócio:** A `data_aula` é estritamente validada para ocorrer **apenas entre `data_atividade` e `data_fim`** da atividade.
+   * **Auditoria Integrada:** Identifica `id_usuario` (quem gerou) e `id_usuario_remocao` (quem removeu).
 
-9. **`certificado` (Polimórfico para Participante e Palestrante):**
-   * Emissão oficial de certificação digital (`id_certificado`, `tipo_destinatario`, `id_participacao`, `id_palestrante`, `id_atividade`, `codigo_validacao`, `status`, `data_emissao`, `carga_horaria`).
-   * **Se Participante:** `tipo_destinatario = 'PARTICIPANTE'`, preenche `id_participacao` (com `UNIQUE(id_participacao)`).
-   * **Se Palestrante:** `tipo_destinatario = 'PALESTRANTE'`, preenche `id_palestrante` e `id_atividade` (com `UNIQUE(id_palestrante, id_atividade)`).
+9. **`log_presenca` (Auditoria Histórica Imutável):**
+   * Registra cronologicamente cada concessão (`GERADA`) ou revogação (`REMOVIDA`) de presença, com carimbo de data/hora e referência ao membro do staff.
+
+10. **`certificado` (Polimórfico para Participante e Palestrante):**
+    * Emissão oficial de certificação digital (`id_certificado`, `tipo_destinatario`, `id_participacao`, `id_palestrante`, `id_atividade`, `codigo_validacao`, `status`, `data_emissao`, `carga_horaria`).
+    * **Se Participante:** `tipo_destinatario = 'PARTICIPANTE'`, preenche `id_participacao` (com `UNIQUE(id_participacao)`).
+    * **Se Palestrante:** `tipo_destinatario = 'PALESTRANTE'`, preenche `id_palestrante` e `id_atividade` (com `UNIQUE(id_palestrante, id_atividade)`).
 
 ---
 
 ## 📚 Dicionário de Dados do Banco de Dados (`eventos_db`)
 
-Abaixo está o catálogo completo de metadados das 10 tabelas do sistema, especificando colunas, tipos de dados físicos, domínios, restrições de nulidade, chaves (`PK`, `FK`, `UK`) e descrições semânticas.
+Abaixo está o catálogo completo de metadados das **11 tabelas** do sistema, especificando colunas, tipos de dados físicos, domínios, restrições de nulidade, chaves (`PK`, `FK`, `UK`) e descrições semânticas.
 
 ### 1. Tabela `usuario`
 > **Propósito:** Armazena os usuários da equipe organizadora e monitores de apoio acadêmico que realizam chamadas e administram eventos.
@@ -397,4 +484,91 @@ docker compose up -d --build
 Acesse no navegador:
 👉 **`http://localhost:8000`**
 
+Para visualizar os logs dos contêineres em tempo real:
+```bash
+docker compose logs -f
+```
+
+Para reiniciar o serviço da aplicação sem recriar o banco:
+```bash
+docker compose restart web
+```
+
 ---
+
+## 🗺️ Mapa de Rotas e Endpoints da Aplicação
+
+Todas as operações são executadas via **SQL puro** (Raw SQL assíncrono via `aiomysql`), com controle de permissão por perfil de acesso e proteção de sessão com cookies HTTP-Only.
+
+### 1. Rotas Públicas e Institucionais
+| Método | Endpoint | Descrição |
+| :---: | :--- | :--- |
+| `GET` | `/` | Página inicial com apresentação do sistema e eventos acadêmicos. |
+| `GET` | `/sobre` | **Página institucional obrigatória** com identificação formal dos discentes e docente. |
+| `GET` | `/login` | Tela de autenticação com seletor de perfil (Staff, Participante, Palestrante). |
+| `POST` | `/login` | Processamento do login, verificação de hash SHA-256 e emissão do cookie JWT. |
+| `GET` | `/cadastro` | Formulário público de cadastro para discentes/ouvintes. |
+| `POST` | `/cadastro` | Cadastro de participante com validação de unicidade de CPF e e-mail via Raw SQL. |
+| `GET` | `/logout` | Destruição da sessão/cookie e redirecionamento seguro para a home. |
+| `GET` | `/verificar` | Validador público de certificados com renderização A4 para impressão. |
+| `GET` | `/api/verificar/{codigo}` | Endpoint REST público retornando metadados de validação em JSON. |
+
+### 2. Rotas do Painel Administrativo / Staff (`/admin/*`)
+| Método | Endpoint | Perfil | Descrição |
+| :---: | :--- | :---: | :--- |
+| `GET` | `/admin/dashboard` | `APOIO`, `ADMIN` | Visão geral com contadores rápidos de eventos, participantes e certificados. |
+| `GET` | `/admin/eventos` | `APOIO`, `ADMIN` | Listagem e formulário de cadastro/edição de eventos acadêmicos. |
+| `POST` | `/admin/eventos/salvar` | `APOIO`, `ADMIN` | Gravação ou atualização de evento via SQL puro. |
+| `POST` | `/admin/eventos/cancelar/{id}` | `ADMIN` | Cancelamento formal de evento acadêmico. |
+| `GET` | `/admin/atividades` | `APOIO`, `ADMIN` | Gestão de atividades, datas de início/fim e requisitos de certificado. |
+| `POST` | `/admin/atividades/salvar` | `APOIO`, `ADMIN` | Criação/edição de atividade com validação de datas e carga horária. |
+| `POST` | `/admin/atividades/cancelar/{id}` | `ADMIN` | Cancelamento de atividade. |
+| `GET` | `/admin/presencas` | `APOIO`, `ADMIN` | Painel de chamada multidias, auditoria de staff e histórico. |
+| `POST` | `/admin/presencas/registrar` | `APOIO`, `ADMIN` | Registro/desmarcação de presença com validação de intervalo e log. |
+| `GET` | `/admin/presencas/pesquisar` | `APOIO`, `ADMIN` | Busca detalhada de todas as presenças de um aluno por Nome ou CPF. |
+| `GET` | `/admin/participantes` | `APOIO`, `ADMIN` | Gestão de participantes cadastrados no sistema. |
+| `POST` | `/admin/participantes/salvar` | `APOIO`, `ADMIN` | Criação ou atualização cadastral de participantes. |
+| `GET` | `/admin/palestrantes` | `APOIO`, `ADMIN` | Gestão de docentes/palestrantes e vínculos de ministração. |
+| `POST` | `/admin/palestrantes/salvar` | `APOIO`, `ADMIN` | Cadastro/edição de palestrantes e currículo. |
+| `GET` | `/admin/certificados` | `APOIO`, `ADMIN` | Gestão de certificados de participantes e palestrantes. |
+| `POST` | `/admin/certificados/status` | `ADMIN` | Alteração de status do certificado (`VALIDO` / `REVOGADO`). |
+| `GET` | `/admin/staff` | `ADMIN` | Gestão da equipe de apoio e criação de novos usuários administradores. |
+| `POST` | `/admin/staff/salvar` | `ADMIN` | Criação e atualização de membros da equipe de apoio. |
+| `GET` | `/admin/relatorios` | `APOIO`, `ADMIN` | Painel estatístico consolidado com taxas de ocupação e frequência. |
+
+### 3. Rotas da Área do Participante (`/participante/*`)
+| Método | Endpoint | Perfil | Descrição |
+| :---: | :--- | :---: | :--- |
+| `GET` | `/participante/painel` | `PARTICIPANTE` | Painel do aluno com inscrições, frequência detalhada e certificados. |
+| `POST` | `/participante/inscrever-evento` | `PARTICIPANTE` | Inscrição no evento acadêmico (bloqueia duplicidade via `UNIQUE`). |
+| `POST` | `/participante/inscrever-atividade` | `PARTICIPANTE` | Matrícula em minicursos, palestras e oficinas do evento. |
+
+### 4. Rotas da Área do Palestrante (`/palestrante/*`)
+| Método | Endpoint | Perfil | Descrição |
+| :---: | :--- | :---: | :--- |
+| `GET` | `/palestrante/painel` | `PALESTRANTE` | Grade de atividades ministradas e visualização de certificados docentes. |
+
+---
+
+## 🛡️ Conformidade Rigorosa com a 3FN e Integridade de Dados
+
+O projeto atende a todas as exigências formais de normalização e modelagem relacional da disciplina de Banco de Dados:
+
+1. **Primeira Forma Normal (1FN):**
+   * Todos os atributos possuem domínios atômicos e indivisíveis.
+   * Não existem colunas repetitivas ou estruturas multivaloradas.
+   * Todas as tabelas possuem chave primária explícita (`PRIMARY KEY`).
+
+2. **Segunda Forma Normal (2FN):**
+   * Todas as colunas não-chave dependem funcionalmente da totalidade da chave primária.
+   * Nas tabelas associativas com chave primária composta (`atividade_palestrante`), os atributos dependem da chave inteira `(id_atividade, id_palestrante)`.
+
+3. **Terceira Forma Normal (3FN):**
+   * Nenhum atributo não-chave depende transitivamente de outro atributo não-chave.
+   * Dados do evento (nome, local, datas) pertencem à tabela `evento` e não são replicados em `atividade` nem em `inscricao`.
+   * Informações de auditoria do staff residem em `usuario` e são referenciadas via chaves estrangeiras (`id_usuario`, `id_usuario_remocao`).
+
+4. **Tratamento de Exceções de Integridade sem ORM:**
+   * Violações de chaves de unicidade (como inscrição duplicada no mesmo evento) disparam `aiomysql.IntegrityError` (código de erro MySQL `1062 - Duplicate entry`), o qual é interceptado assincronamente pelo FastAPI, retornando alertas claros e amigáveis ao usuário via interface Bootstrap.
+
+

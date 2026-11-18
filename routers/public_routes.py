@@ -127,3 +127,55 @@ async def verificar_certificado_publico(request: Request, codigo: Optional[str] 
             "erro_busca": erro_busca
         }
     )
+
+
+@router.get("/api/verificar/{codigo}")
+async def api_verificar_certificado(codigo: str):
+    """
+    Endpoint REST público para verificação automatizada de certificados em formato JSON via Raw SQL.
+    """
+    codigo_formatado = codigo.strip().upper()
+    query = """
+        SELECT 
+            c.id_certificado,
+            c.tipo_destinatario,
+            c.codigo_validacao,
+            c.status,
+            c.data_emissao,
+            c.carga_horaria,
+            COALESCE(p.nome, pal.nome) AS titular_nome,
+            COALESCE(p.cpf, pal.cpf) AS titular_cpf,
+            COALESCE(p.email, pal.email) AS titular_email,
+            COALESCE(a.nome, a_pal.nome) AS atividade_nome,
+            COALESCE(a.tipo, a_pal.tipo) AS atividade_tipo,
+            COALESCE(e.nome, e_pal.nome) AS evento_nome,
+            COALESCE(e.local, e_pal.local) AS evento_local,
+            COALESCE(e.data_inicio, e_pal.data_inicio) AS data_inicio,
+            COALESCE(e.data_fim, e_pal.data_fim) AS data_fim
+        FROM certificado c
+        LEFT JOIN participacao_atividade pa ON c.id_participacao = pa.id_participacao
+        LEFT JOIN inscricao i ON pa.id_inscricao = i.id_inscricao
+        LEFT JOIN participante p ON i.id_participante = p.id_participante
+        LEFT JOIN atividade a ON pa.id_atividade = a.id_atividade
+        LEFT JOIN evento e ON a.id_evento = e.id_evento
+        LEFT JOIN palestrante pal ON c.id_palestrante = pal.id_palestrante
+        LEFT JOIN atividade a_pal ON c.id_atividade = a_pal.id_atividade
+        LEFT JOIN evento e_pal ON a_pal.id_evento = e_pal.id_evento
+        WHERE UPPER(c.codigo_validacao) = %s
+    """
+    resultado = await fetch_one(query, (codigo_formatado,))
+    if not resultado:
+        return {"valido": False, "mensagem": "Certificado não encontrado."}
+
+    # Serializa datas e decimais para JSON
+    resultado["data_emissao"] = str(resultado["data_emissao"]) if resultado.get("data_emissao") else None
+    resultado["data_inicio"] = str(resultado["data_inicio"]) if resultado.get("data_inicio") else None
+    resultado["data_fim"] = str(resultado["data_fim"]) if resultado.get("data_fim") else None
+    resultado["carga_horaria"] = float(resultado["carga_horaria"]) if resultado.get("carga_horaria") else 0.0
+
+    return {
+        "valido": resultado["status"] == "VALIDO",
+        "status": resultado["status"],
+        "certificado": resultado
+    }
+
